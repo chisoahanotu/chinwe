@@ -740,14 +740,26 @@ Return ONLY valid JSON, no other text, no markdown fences. Structure:
 
 Rules:
 - Each item has "text" (the question or finding — concise, no explanation inline), "highYield" (bool), "rationale" (1-2 sentences explaining what this helps rule in/out)
-- 3-6 items per section, more for History sections
-- highYield=true for the 2-3 most critical items per section
-- Keep item text short — no rationale embedded in it`;
+- 3-4 items per section max
+- highYield=true for the 1-2 most critical items per section
+- Item text should be clinical shorthand, not full sentences or questions (e.g. "Prodrome" not "Was there any warning before you passed out?", "Duration of LOC" not "How long were you unconscious?")
+- No question marks — these are prompts for the student, not questions
+- Exception: "Attending Pearls" section should use full sentences — these are teaching points, not patient questions
+- Keep rationale to 1 sentence only
+- In rationale text, avoid apostrophes and special characters — use plain ASCII only`;
 
   try{
-    const data=await callAPI({messages:[{role:'user',content:prompt}]});
+    const data=await callAPI({max_tokens:6000,messages:[{role:'user',content:prompt}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';
-    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    let parsed;
+    try{
+      parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    }catch(jsonErr){
+      // Try to extract JSON object even if response has surrounding text
+      const match=raw.match(/\{[\s\S]*\}/);
+      if(match){parsed=JSON.parse(match[0]);}
+      else{throw jsonErr;}
+    }
     renderHxOutput(parsed);
   }catch(e){
     errorEl.textContent='Error: '+e.message;
@@ -772,16 +784,21 @@ function renderHxOutput(data){
     body.className='hx-section-body';
     const items=document.createElement('div');
     items.className='hx-items';
+    const isPearls=sec.title==='Attending Pearls';
     sec.items.forEach((item,ii)=>{
       const itemEl=document.createElement('div');
       itemEl.className='hx-item';
-      const uid=`why-${si}-${ii}`;
-      itemEl.innerHTML=`
-        <div class="hx-item-text">
-          <span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${escHtml(item.text)}</span>
-          <button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button>
-        </div>
-        <div class="why-rationale" id="${uid}">${escHtml(item.rationale)}</div>`;
+      if(isPearls){
+        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main hx-pearl">${escHtml(item.text)}</span></div>`;
+      }else{
+        const uid=`why-${si}-${ii}`;
+        itemEl.innerHTML=`
+          <div class="hx-item-text">
+            <span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${escHtml(item.text)}</span>
+            <button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button>
+          </div>
+          <div class="why-rationale" id="${uid}">${escHtml(item.rationale)}</div>`;
+      }
       items.appendChild(itemEl);
     });
     body.appendChild(items);

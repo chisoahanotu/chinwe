@@ -26,7 +26,7 @@ app.post('/api/chat', async (req, res) => {
       },
       body: JSON.stringify({
         model: model || 'claude-sonnet-4-20250514',
-        max_tokens: max_tokens || 3000,
+        max_tokens: max_tokens || 6000,
         system,
         messages,
       }),
@@ -57,7 +57,7 @@ app.post('/api/chat/stream', async (req, res) => {
       },
       body: JSON.stringify({
         model: model || 'claude-sonnet-4-20250514',
-        max_tokens: max_tokens || 3000,
+        max_tokens: max_tokens || 6000,
         system,
         messages,
         stream: true,
