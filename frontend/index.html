@@ -82,6 +82,29 @@
   .response-body { font-size: 13.5px; line-height: 1.8; color: var(--text); white-space: pre-wrap; font-family: var(--sans); }
   .response-body strong { color: var(--accent2); font-weight: 600; }
 
+  /* ── H&X Collapsible Sections ── */
+  .hx-output { display: flex; flex-direction: column; gap: 10px; }
+  .hx-section { border: 1px solid var(--border2); border-radius: 10px; overflow: hidden; }
+  .hx-section-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; cursor: pointer; background: var(--surface2); transition: background 0.15s; user-select: none; }
+  .hx-section-header:hover { background: var(--accent-dim); }
+  .hx-section-title { font-size: 12px; font-weight: 600; color: var(--accent2); font-family: var(--mono); letter-spacing: 0.05em; text-transform: uppercase; }
+  .hx-section-arrow { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
+  .hx-section.open .hx-section-arrow { transform: rotate(180deg); }
+  .hx-section-body { display: none; padding: 12px 14px; background: var(--surface); border-top: 1px solid var(--border); }
+  .hx-section.open .hx-section-body { display: block; }
+  .hx-items { display: flex; flex-direction: column; gap: 8px; }
+  .hx-item { border-left: 2px solid var(--border2); padding-left: 10px; }
+  .hx-item-text { font-size: 13px; line-height: 1.6; color: var(--text); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .hx-item-main { flex: 1; }
+  .hx-high-yield { font-family: var(--mono); font-size: 10px; background: rgba(234,108,0,0.12); color: var(--orange); border: 1px solid rgba(234,108,0,0.25); border-radius: 4px; padding: 1px 6px; white-space: nowrap; margin-top: 2px; display: inline-block; }
+  .why-btn { font-size: 10px; color: var(--muted2); border: 1px solid var(--border2); border-radius: 4px; padding: 2px 8px; cursor: pointer; background: none; font-family: var(--sans); white-space: nowrap; transition: all 0.15s; flex-shrink: 0; margin-top: 2px; }
+  .why-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .why-btn.open { color: var(--accent2); border-color: var(--accent); background: var(--accent-dim); }
+  .why-rationale { font-size: 12px; color: var(--muted2); line-height: 1.6; margin-top: 6px; padding: 7px 10px; background: var(--surface2); border-radius: 6px; display: none; }
+  .why-rationale.visible { display: block; }
+  .hx-red-flag { color: var(--red); font-size: 12px; }
+  .hx-pearl { font-size: 12px; font-style: italic; color: var(--muted2); }
+
   /* Inline study question after note */
   .inline-study { background: #fffbeb; border: 1.5px solid rgba(180,83,9,0.2); border-radius: 10px; padding: 16px; margin-top: 16px; display: none; }
   .inline-study.visible { display: block; }
@@ -101,6 +124,41 @@
   .inline-exp strong { color: var(--correct); }
   .inline-exp.wrong strong { color: #b45309; }
 
+  /* ── Clarifying Questions Modal ── */
+  .clarify-overlay { position: fixed; inset: 0; background: rgba(13,46,38,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .clarify-overlay.visible { display: flex; }
+  .clarify-modal { background: var(--surface); border-radius: 14px; padding: 24px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); border: 1px solid var(--border2); }
+  .clarify-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); font-weight: 500; margin-bottom: 6px; }
+  .clarify-subtitle { font-size: 13px; color: var(--muted2); margin-bottom: 18px; line-height: 1.5; }
+  .clarify-q { margin-bottom: 16px; }
+  .clarify-q-text { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 8px; line-height: 1.5; }
+  .clarify-options { display: flex; flex-wrap: wrap; gap: 6px; }
+  .clarify-opt { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border2); background: var(--surface2); color: var(--muted2); font-family: var(--sans); transition: all 0.15s; }
+  .clarify-opt:hover { border-color: var(--teal); color: var(--teal); }
+  .clarify-opt.selected { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .clarify-input { width: 100%; background: var(--surface2); border: 1.5px solid var(--border2); border-radius: 7px; padding: 8px 11px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
+  .clarify-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,151,167,0.1); }
+  .clarify-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+  .clarify-skip { background: none; border: 1px solid var(--border2); color: var(--muted2); border-radius: 7px; padding: 8px 16px; font-size: 12px; cursor: pointer; font-family: var(--sans); }
+  .clarify-skip:hover { color: var(--text); border-color: var(--muted); }
+  .clarify-proceed { background: var(--teal); color: #fff; border: none; border-radius: 7px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
+  .clarify-proceed:hover { background: #007a8a; }
+
+  /* ── AI Assist on A&P ── */
+  .ai-assist-bar { display: none; align-items: center; gap: 10px; background: linear-gradient(135deg, #f0fdfa, #e0f2fe); border: 1.5px solid rgba(0,151,167,0.25); border-radius: 10px; padding: 12px 16px; margin-top: 14px; flex-wrap: wrap; }
+  .ai-assist-bar.visible { display: flex; }
+  .ai-assist-label { font-size: 12px; font-weight: 600; color: var(--teal); flex: 1; }
+  .ai-assist-sub { font-size: 11px; color: var(--muted2); width: 100%; margin-top: 2px; }
+  .ai-assist-btn { display: flex; align-items: center; gap: 6px; background: var(--teal); color: #fff; border: none; border-radius: 7px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all 0.15s; white-space: nowrap; }
+  .ai-assist-btn:hover { background: #007a8a; }
+  .ai-assist-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ai-assist-btn .spinner { width: 11px; height: 11px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .ai-assist-btn.loading .spinner { display: block; }
+  .ai-assist-btn.loading .ai-btn-text { display: none; }
+  .ai-assist-result { background: var(--surface); border: 1px solid rgba(0,151,167,0.2); border-radius: 8px; padding: 12px 14px; margin-top: 10px; font-size: 13px; line-height: 1.75; color: var(--text); display: none; width: 100%; }
+  .ai-assist-result.visible { display: block; }
+  .ai-assist-result strong { color: var(--teal); }
+
   .quick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip { background: var(--surface2); border: 1.5px solid var(--border2); color: var(--muted2); border-radius: 20px; padding: 5px 14px; font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); font-weight: 500; }
   .chip:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-dim); }
@@ -113,16 +171,19 @@
   .mode-btn:hover { color: var(--accent); border-color: var(--accent); }
   .mode-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-  .upload-zone { border: 2px dashed var(--border2); border-radius: 10px; padding: 24px 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface2); position: relative; min-height: 130px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-  .upload-zone:hover { border-color: var(--accent); background: var(--accent-dim); }
-  .upload-zone.has-image { border-style: solid; border-color: var(--accent); padding: 10px; }
-  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .upload-icon { font-size: 26px; margin-bottom: 6px; }
-  .upload-label { font-size: 13px; color: var(--muted2); font-weight: 600; }
-  .upload-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
-  .preview-img { max-width: 100%; max-height: 180px; border-radius: 6px; display: block; margin: 0 auto; }
-  .clear-img { background: none; border: 1px solid var(--border2); color: var(--muted2); border-radius: 6px; padding: 3px 10px; font-size: 11px; cursor: pointer; font-family: var(--sans); margin-top: 6px; display: block; margin-left: auto; transition: all 0.15s; }
-  .clear-img:hover { color: var(--red); border-color: var(--red); }
+  /* ── Multi-photo upload ── */
+  .photo-actions { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .photo-action-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all 0.15s; border: 1.5px solid var(--border2); background: var(--surface2); color: var(--muted2); }
+  .photo-action-btn:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-dim); }
+  .photo-action-btn input[type=file] { display: none; }
+  .photo-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 0; }
+  .photo-thumb { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid var(--border2); flex-shrink: 0; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb-remove { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; background: rgba(13,46,38,0.7); color: #fff; border: none; border-radius: 50%; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; font-family: var(--sans); }
+  .photo-thumb-remove:hover { background: var(--red); }
+  .photo-empty { font-size: 12px; color: var(--muted); padding: 12px 0; display: none; }
+  .photo-empty.visible { display: block; }
+
   .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
   @media (max-width: 580px) { .photo-grid,.field-row,.field-row.three { grid-template-columns: 1fr; } }
   .photo-col { display: flex; flex-direction: column; gap: 6px; }
@@ -182,6 +243,19 @@
   </div>
 </div>
 
+<!-- Clarifying Questions Overlay -->
+<div class="clarify-overlay" id="clarify-overlay">
+  <div class="clarify-modal">
+    <div class="clarify-title">Refine your note</div>
+    <div class="clarify-subtitle">A few quick questions to make the note more complete and accurate.</div>
+    <div id="clarify-questions"></div>
+    <div class="clarify-actions">
+      <button class="clarify-skip" onclick="proceedWithNote(true)">Skip — generate anyway</button>
+      <button class="clarify-proceed" onclick="proceedWithNote(false)">Generate note ↗</button>
+    </div>
+  </div>
+</div>
+
 <div class="main">
 
   <!-- H&X Coach -->
@@ -221,9 +295,9 @@
     <div class="response-section" id="hx-response">
       <div class="response-header">
         <span class="response-tag tag-hx">History & Exam Guide</span>
-        <div class="response-actions"><button class="copy-btn" onclick="copyResponse('hx-body')">Copy</button></div>
+        <div class="response-actions"><button class="copy-btn" id="hx-copy-btn" onclick="copyHx()">Copy</button></div>
       </div>
-      <div class="response-body" id="hx-body"></div>
+      <div class="hx-output" id="hx-output"></div>
     </div>
   </div>
 
@@ -323,6 +397,8 @@
         <button class="mode-btn active" id="mode-type" onclick="setMode('type')">✎ Type notes</button>
         <button class="mode-btn" id="mode-photo" onclick="setMode('photo')">📷 Photo + notes</button>
       </div>
+
+      <!-- Typed mode -->
       <div id="typed-inputs">
         <div class="field-row">
           <div class="field"><label>Note type</label>
@@ -337,6 +413,8 @@
         </div>
         <div class="field" style="margin-top:10px;"><label>Assessment & plan (optional)</label><textarea id="note-ap" placeholder="Leave blank to auto-generate..."></textarea></div>
       </div>
+
+      <!-- Photo mode -->
       <div id="photo-inputs" style="display:none;">
         <div class="field-row" style="margin-bottom:12px;">
           <div class="field"><label>Note type</label>
@@ -346,14 +424,20 @@
         </div>
         <div class="photo-grid">
           <div class="photo-col">
-            <div class="supp-label">📷 Photo of written notes</div>
-            <div class="supp-sub">Snap or upload — handwriting, abbreviations, any format</div>
-            <div class="upload-zone" id="upload-zone">
-              <input type="file" id="note-img-input" accept="image/*" capture="environment" onchange="handleImage(event)" />
-              <div id="upload-placeholder"><div class="upload-icon">📋</div><div class="upload-label">Tap to snap or upload</div><div class="upload-sub">Opens camera on mobile</div></div>
-              <div id="upload-preview" style="display:none;"><img id="preview-img" class="preview-img" src="" alt="notes" /></div>
+            <div class="supp-label">📷 Photos of written notes</div>
+            <div class="supp-sub">Add multiple pages — snap or upload from camera roll</div>
+            <div class="photo-actions">
+              <label class="photo-action-btn">
+                📷 Take photo
+                <input type="file" id="photo-camera-input" accept="image/*" capture="environment" multiple onchange="addPhotos(event)" />
+              </label>
+              <label class="photo-action-btn">
+                🖼 Upload photos
+                <input type="file" id="photo-upload-input" accept="image/*" multiple onchange="addPhotos(event)" />
+              </label>
             </div>
-            <button class="clear-img" id="clear-img-btn" style="display:none;" onclick="clearImage()">Remove photo</button>
+            <div class="photo-thumbs" id="photo-thumbs"></div>
+            <div class="photo-empty" id="photo-empty">No photos added yet</div>
           </div>
           <div class="photo-col">
             <div class="supp-label">✎ Additional notes</div>
@@ -362,9 +446,11 @@
           </div>
         </div>
       </div>
+
       <button class="run-btn" id="note-btn" onclick="runNote()"><div class="spinner"></div><span class="btn-text">Generate Note ↗</span></button>
       <div class="error-text" id="note-error"></div>
     </div>
+
     <div class="response-section" id="note-response">
       <div class="response-header">
         <span class="response-tag tag-note">Clinical Note</span>
@@ -377,7 +463,22 @@
         </div>
       </div>
       <div class="response-body" id="note-body"></div>
-      <!-- Inline study question appears here -->
+
+      <!-- AI Assist bar -->
+      <div class="ai-assist-bar" id="ai-assist-bar">
+        <div style="display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap;">
+          <div style="flex:1;">
+            <div class="ai-assist-label">✦ AI Assist — Assessment & Plan</div>
+            <div class="ai-assist-sub">Review the A&P for gaps, additions, or things that may not apply to this patient.</div>
+          </div>
+          <button class="ai-assist-btn" id="ai-assist-btn" onclick="runAiAssist()">
+            <div class="spinner"></div><span class="ai-btn-text">Run AI Assist</span>
+          </button>
+        </div>
+        <div class="ai-assist-result" id="ai-assist-result"></div>
+      </div>
+
+      <!-- Inline study question -->
       <div class="inline-study" id="inline-study">
         <div class="inline-study-label">Step 2 — Based on this patient</div>
         <div class="inline-q" id="inline-q"></div>
@@ -430,173 +531,464 @@
 </div>
 
 <script>
-// Point this at your backend once deployed. For local dev use http://localhost:3001
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://chinwe-production.up.railway.app';
 
-let currentMode='type', imageBase64=null, imageMimeType=null;
-let selectedTopics=[], scoreCorrect=0, scoreWrong=0;
-let lastNoteText='';
+let currentMode = 'type';
+// Multi-photo: array of {base64, mimeType, objectUrl}
+let photoFiles = [];
+let selectedTopics = [], scoreCorrect = 0, scoreWrong = 0;
+let lastNoteText = '';
+// Stored note params for post-clarify generation
+let pendingNoteParams = null;
 
+// ── Tab / Mode ──────────────────────────────────────────────
 function switchTab(n){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+n).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
 function setMode(m){currentMode=m;document.getElementById('mode-type').classList.toggle('active',m==='type');document.getElementById('mode-photo').classList.toggle('active',m==='photo');document.getElementById('typed-inputs').style.display=m==='type'?'block':'none';document.getElementById('photo-inputs').style.display=m==='photo'?'block':'none';}
-function handleImage(e){const f=e.target.files[0];if(!f)return;imageMimeType=f.type||'image/jpeg';const r=new FileReader();r.onload=(ev)=>{imageBase64=ev.target.result.split(',')[1];document.getElementById('upload-placeholder').style.display='none';document.getElementById('upload-preview').style.display='block';document.getElementById('preview-img').src=ev.target.result;document.getElementById('upload-zone').classList.add('has-image');document.getElementById('clear-img-btn').style.display='block';};r.readAsDataURL(f);}
-function clearImage(){imageBase64=null;imageMimeType=null;document.getElementById('note-img-input').value='';document.getElementById('upload-placeholder').style.display='flex';document.getElementById('upload-preview').style.display='none';document.getElementById('upload-zone').classList.remove('has-image');document.getElementById('clear-img-btn').style.display='none';document.getElementById('preview-img').src='';}
+
+// ── Multi-photo ─────────────────────────────────────────────
+function addPhotos(e){
+  const files=Array.from(e.target.files);
+  files.forEach(f=>{
+    const mime=f.type||'image/jpeg';
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const b64=ev.target.result.split(',')[1];
+      const objUrl=URL.createObjectURL(f);
+      photoFiles.push({base64:b64,mimeType:mime,objectUrl:objUrl});
+      renderThumbs();
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value='';
+}
+function removePhoto(idx){
+  URL.revokeObjectURL(photoFiles[idx].objectUrl);
+  photoFiles.splice(idx,1);
+  renderThumbs();
+}
+function renderThumbs(){
+  const container=document.getElementById('photo-thumbs');
+  const empty=document.getElementById('photo-empty');
+  container.innerHTML='';
+  if(photoFiles.length===0){empty.classList.add('visible');return;}
+  empty.classList.remove('visible');
+  photoFiles.forEach((p,i)=>{
+    const wrap=document.createElement('div');wrap.className='photo-thumb';
+    const img=document.createElement('img');img.src=p.objectUrl;img.alt='note photo '+(i+1);
+    const rm=document.createElement('button');rm.className='photo-thumb-remove';rm.textContent='×';rm.onclick=()=>removePhoto(i);
+    wrap.appendChild(img);wrap.appendChild(rm);container.appendChild(wrap);
+  });
+}
+
+// ── Quick fills ─────────────────────────────────────────────
 function fillHx(cc){document.getElementById('hx-cc').value=cc;}
 function toggleTopic(el,topic){el.classList.toggle('active');selectedTopics=el.classList.contains('active')?[...selectedTopics,topic]:selectedTopics.filter(t=>t!==topic);}
 function fillDDx(t){const m={chest:{age:'58M',cc:'chest pain',onset:'acute (<24h)',vitals:'HR 88, BP 145/90',pmh:'DM2, HTN, smoker 30pk-yr',findings:'diaphoresis, troponin 0.9 rising, ST elevations II/III/aVF'},dyspnea:{age:'72F',cc:'shortness of breath',onset:'subacute (days–weeks)',vitals:'O2 88% RA, RR 24, HR 102',pmh:'HFrEF EF 35%, CKD3',findings:'BNP 1800, bilateral crackles, JVD, 2+ pitting edema'},altered:{age:'80M',cc:'altered mental status',onset:'acute (<24h)',vitals:'T 38.9, HR 115, BP 95/60',pmh:'dementia, BPH',findings:'UA pyuria, Cr 1.9, leukocytosis 16k'},abd:{age:'35F',cc:'right lower quadrant pain',onset:'acute (<24h)',vitals:'T 38.1, HR 95',pmh:'G2P2',findings:'RLQ tenderness, Rovsing+, WBC 13.5, hCG negative'},syncope:{age:'22M',cc:'syncope',onset:'acute (<24h)',vitals:'BP 108/70, orthostatics+',pmh:'none',findings:'witnessed LOC x30s, QTc 490ms'},fever:{age:'45F',cc:'fever and productive cough',onset:'subacute (days–weeks)',vitals:'T 39.2, HR 104, O2 93%',pmh:'asthma',findings:'WBC 18k, RLL consolidation, procalcitonin 2.4'}};const d=m[t];if(!d)return;document.getElementById('ddx-age').value=d.age;document.getElementById('ddx-cc').value=d.cc;document.getElementById('ddx-onset').value=d.onset;document.getElementById('ddx-vitals').value=d.vitals;document.getElementById('ddx-pmh').value=d.pmh;document.getElementById('ddx-findings').value=d.findings;}
 function fillGuide(t){const m={htn:{q:'management of hypertension',specialty:'ACC/AHA (cardiology)'},dm:{q:'T2DM glycemic targets and first-line therapy',specialty:'ADA (diabetes)'},afib:{q:'anticoagulation in atrial fibrillation',specialty:'ACC/AHA (cardiology)'},ckd:{q:'CKD staging, monitoring, and management',specialty:'any'},sepsis:{q:'sepsis-3 definition, workup, and Hour-1 bundle',specialty:'ATS/ERS (pulm/critical care)'},pe:{q:'pulmonary embolism diagnosis and treatment',specialty:'ACC/AHA (cardiology)'}};const d=m[t];if(!d)return;document.getElementById('guide-q').value=d.q;document.getElementById('guide-specialty').value=d.specialty;}
 
+// ── API ─────────────────────────────────────────────────────
 async function callAPI(body){
   const resp=await fetch(`${API_BASE}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
   return resp.json();
 }
-
 async function callClaude(system,messages,bodyId,errorId,btnId){
   const btn=document.getElementById(btnId),errorEl=document.getElementById(errorId),bodyEl=document.getElementById(bodyId),section=document.getElementById(bodyId.replace('-body','-response'));
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
   bodyEl.innerHTML='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
   section.classList.add('visible');
-  try{
-    const data=await callAPI({system,messages});
-    const text=data.content?.map(b=>b.text||'').join('')||'';
-    bodyEl.innerHTML=fmt(text);
-    return text;
-  }catch(e){errorEl.textContent='Error: '+e.message;bodyEl.innerHTML='';section.classList.remove('visible');return null;}
+  try{const data=await callAPI({system,messages});const text=data.content?.map(b=>b.text||'').join('')||'';bodyEl.innerHTML=fmt(text);return text;}
+  catch(e){errorEl.textContent='Error: '+e.message;bodyEl.innerHTML='';section.classList.remove('visible');return null;}
   finally{btn.classList.remove('loading');btn.disabled=false;}
 }
-
 function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>').replace(/\n/g,'<br>');}
 function simple(sys,txt,bid,eid,btnid){return callClaude(sys,[{role:'user',content:txt}],bid,eid,btnid);}
 
-function runHx(){const cc=document.getElementById('hx-cc').value.trim();if(!cc){document.getElementById('hx-error').textContent='Enter a chief complaint first.';return;}const age=document.getElementById('hx-age').value.trim();simple(`You are a clinical reasoning coach for medical students. Help students know exactly what history questions to ask and what physical exam maneuvers to perform — and why each matters diagnostically. Practical, structured, bedside-ready.`,`Chief complaint: ${cc}${age?'\nPatient: '+age:''}\n\n**Key History Questions**\nOrganize by category (onset/character, associated symptoms, PMH/risk factors, medications, social history). For each, state what diagnosis it helps support or exclude. Flag 2-3 most critical with [HIGH YIELD].\n\n**Essential Physical Exam**\nSpecific maneuvers with what a positive finding suggests. Flag must-do with [HIGH YIELD].\n\n**Red Flag Symptoms / Exam Findings**\nAnything requiring urgent workup or escalation.\n\n**Attending Pearls**\n1-2 things attendings commonly ask that students get caught off guard by.\n\nConcise and scannable.`,'hx-body','hx-error','hx-btn');}
+// ── H&X Coach with collapsible structured output ─────────────
+async function runHx(){
+  const cc=document.getElementById('hx-cc').value.trim();
+  if(!cc){document.getElementById('hx-error').textContent='Enter a chief complaint first.';return;}
+  const age=document.getElementById('hx-age').value.trim();
+  const btn=document.getElementById('hx-btn'),errorEl=document.getElementById('hx-error'),output=document.getElementById('hx-output'),section=document.getElementById('hx-response');
+  btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
+  output.innerHTML='<span style="color:var(--muted);font-size:13px;">Generating...</span>';
+  section.classList.add('visible');
+
+  const prompt=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
+
+Return ONLY valid JSON, no other text, no markdown fences. Structure:
+{
+  "sections": [
+    {
+      "title": "Onset & Character",
+      "items": [
+        {"text": "When did it start?", "highYield": false, "rationale": "Helps distinguish acute vs chronic processes and narrows the differential."},
+        {"text": "Sharp, pressure, or burning quality?", "highYield": true, "rationale": "Chest pressure is classic for ACS; sharp pleuritic pain suggests PE or pericarditis."}
+      ]
+    },
+    {
+      "title": "Associated Symptoms",
+      "items": [...]
+    },
+    {
+      "title": "PMH & Risk Factors",
+      "items": [...]
+    },
+    {
+      "title": "Medications & Social History",
+      "items": [...]
+    },
+    {
+      "title": "Physical Exam",
+      "items": [...]
+    },
+    {
+      "title": "Red Flags",
+      "items": [{"text": "...", "highYield": true, "rationale": "..."}]
+    },
+    {
+      "title": "Attending Pearls",
+      "items": [{"text": "...", "highYield": false, "rationale": "..."}]
+    }
+  ]
+}
+
+Rules:
+- Each item has "text" (the question or finding — concise, no explanation inline), "highYield" (bool), "rationale" (1-2 sentences explaining what this helps rule in/out)
+- 3-6 items per section, more for History sections
+- highYield=true for the 2-3 most critical items per section
+- Keep item text short — no rationale embedded in it`;
+
+  try{
+    const data=await callAPI({messages:[{role:'user',content:prompt}]});
+    const raw=data.content?.map(b=>b.text||'').join('')||'';
+    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderHxOutput(parsed);
+  }catch(e){
+    errorEl.textContent='Error: '+e.message;
+    output.innerHTML='';
+    section.classList.remove('visible');
+  }finally{
+    btn.classList.remove('loading');btn.disabled=false;
+  }
+}
+
+function renderHxOutput(data){
+  const container=document.getElementById('hx-output');
+  container.innerHTML='';
+  data.sections.forEach((sec,si)=>{
+    const secEl=document.createElement('div');
+    secEl.className='hx-section';
+    const header=document.createElement('div');
+    header.className='hx-section-header';
+    header.innerHTML=`<span class="hx-section-title">${sec.title}</span><span class="hx-section-arrow">▾</span>`;
+    header.onclick=()=>secEl.classList.toggle('open');
+    const body=document.createElement('div');
+    body.className='hx-section-body';
+    const items=document.createElement('div');
+    items.className='hx-items';
+    sec.items.forEach((item,ii)=>{
+      const itemEl=document.createElement('div');
+      itemEl.className='hx-item';
+      const uid=`why-${si}-${ii}`;
+      itemEl.innerHTML=`
+        <div class="hx-item-text">
+          <span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${escHtml(item.text)}</span>
+          <button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button>
+        </div>
+        <div class="why-rationale" id="${uid}">${escHtml(item.rationale)}</div>`;
+      items.appendChild(itemEl);
+    });
+    body.appendChild(items);
+    secEl.appendChild(header);
+    secEl.appendChild(body);
+    container.appendChild(secEl);
+  });
+}
+function toggleWhy(uid){
+  const el=document.getElementById(uid),btn=document.getElementById('btn-'+uid);
+  const open=el.classList.toggle('visible');
+  btn.classList.toggle('open',open);
+  btn.textContent=open?'Hide':'Why ask?';
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function copyHx(){
+  const sections=document.querySelectorAll('.hx-section');
+  let text='';
+  sections.forEach(s=>{
+    const title=s.querySelector('.hx-section-title')?.textContent||'';
+    text+=title+'\n';
+    s.querySelectorAll('.hx-item-main').forEach(i=>text+='  • '+i.innerText.replace('HIGH YIELD','[HIGH YIELD]')+'\n');
+    text+='\n';
+  });
+  navigator.clipboard.writeText(text.trim()).then(()=>{
+    const btn=document.getElementById('hx-copy-btn');btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);
+  });
+}
+
+// ── DDx, Drug, Guidelines (unchanged) ───────────────────────
 function runDDx(){const cc=document.getElementById('ddx-cc').value.trim();if(!cc){document.getElementById('ddx-error').textContent='Chief complaint required.';return;}const age=document.getElementById('ddx-age').value.trim(),onset=document.getElementById('ddx-onset').value,vitals=document.getElementById('ddx-vitals').value.trim(),pmh=document.getElementById('ddx-pmh').value.trim(),findings=document.getElementById('ddx-findings').value.trim();simple(`Clinical decision support for medical students. Concise, accurate, evidence-based. Format for quick scanning. Always include must-not-miss diagnoses.`,`Differential for: Patient: ${age||'unspecified'}, CC: ${cc}${onset?', Onset: '+onset:''}${vitals?'\nVitals: '+vitals:''}${pmh?'\nPMH: '+pmh:''}${findings?'\nFindings: '+findings:''}\n\n**Must Not Miss** | **Most Likely** | **Also Consider** | **Key Next Steps**`,'ddx-body','ddx-error','ddx-btn');}
 function runDrug(){const drug=document.getElementById('drug-name').value.trim();if(!drug){document.getElementById('drug-error').textContent='Drug name required.';return;}const indication=document.getElementById('drug-indication').value.trim(),weight=document.getElementById('drug-weight').value.trim(),age=document.getElementById('drug-age').value.trim(),renal=document.getElementById('drug-renal').value.trim(),meds=document.getElementById('drug-meds').value.trim();simple(`Clinical pharmacology reference for medical students. Accurate, evidence-based. Renal/hepatic adjustments always. Flag contraindications and interactions. Disclaimer: pharmacy verification always required.`,`Drug: ${drug}${indication?'\nIndication: '+indication:''}${age?'\nPatient: '+age:''}${weight?'\nWeight: '+weight+'kg':''}${renal?'\nRenal: '+renal:''}${meds?'\nMeds/allergies: '+meds:''}\n\n**Standard Dosing** | **Dose Adjustments** | **Contraindications / Black Box** | **Key Interactions** | **Monitoring** | **Prescribing Tip**`,'drug-body','drug-error','drug-btn');}
 function runGuide(){const q=document.getElementById('guide-q').value.trim();if(!q){document.getElementById('guide-error').textContent='Clinical question required.';return;}const specialty=document.getElementById('guide-specialty').value,context=document.getElementById('guide-context').value.trim();simple(`Clinical guidelines reference for medical students. Current evidence-based guidelines. Cite sources with year. Class of recommendation and LOE. Personalize to patient context when provided.`,`Question: ${q}${specialty?'\nGuideline body: '+specialty:''}${context?'\nPatient context: '+context:''}\n\n**Guideline Summary** | **Diagnostic Criteria / Staging** | **Treatment Algorithm** | **Special Populations** | **Source**${context?' | **Personalized for this patient**':''}`,'guide-body','guide-error','guide-btn');}
 
+// ── Note: step 1 — gather params, request clarifying Qs ─────
 async function runNote(){
   const errorEl=document.getElementById('note-error');
   errorEl.textContent='';
   document.getElementById('inline-study').classList.remove('visible');
   document.getElementById('test-btn').classList.remove('visible');
+  document.getElementById('ai-assist-bar').classList.remove('visible');
+  document.getElementById('ai-assist-result').classList.remove('visible');
+  document.getElementById('ai-assist-result').innerHTML='';
 
-  let text=null;
   if(currentMode==='photo'){
-    if(!imageBase64){errorEl.textContent='Snap or upload a photo first.';return;}
-    const noteType=document.getElementById('note-type-photo').value,extra=document.getElementById('note-extra').value.trim(),supp=document.getElementById('note-supp').value.trim();
-    text=await callClaude(`You are a clinical note-writing assistant for medical students. You excel at reading handwritten medical notes. Convert raw notes into polished, professional clinical documentation. Seamlessly integrate supplemental verbal information.`,[{role:'user',content:[{type:'image',source:{type:'base64',media_type:imageMimeType,data:imageBase64}},{type:'text',text:`These are a medical student's notes. Read carefully.\n\nGenerate a complete, professional ${noteType}. Standard headers. Full problem-based A&P.${extra?'\nContext: '+extra:''}${supp?'\n\nAdditional info (integrate naturally):\n'+supp:''}\n\nIf illegible: [not legible]. If missing: [not documented].`}]}],'note-body','note-error','note-btn');
+    if(photoFiles.length===0){errorEl.textContent='Add at least one photo first.';return;}
+    pendingNoteParams={mode:'photo'};
   }else{
     const hpi=document.getElementById('note-hpi').value.trim();
     if(!hpi){errorEl.textContent='HPI required.';return;}
-    const noteType=document.getElementById('note-type').value,pt=document.getElementById('note-pt').value.trim(),vitals=document.getElementById('note-vitals').value.trim(),exam=document.getElementById('note-exam').value.trim(),ap=document.getElementById('note-ap').value.trim();
-    text=await simple(`Clinical note-writing assistant for medical students. Professional, accurate, standard medical format. Problem-based A&P. Generate A&P if not provided.`,`Write a ${noteType}:\n${pt?'Patient: '+pt+'\n':''}HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam/labs: '+exam:''}${ap?'\nA&P: '+ap:''}\n\nComplete note for attending review.`,'note-body','note-error','note-btn');
+    pendingNoteParams={mode:'type'};
+  }
+
+  // Ask AI for clarifying questions
+  const btn=document.getElementById('note-btn');
+  btn.classList.add('loading');btn.disabled=true;
+
+  try{
+    let summaryForClarify='';
+    if(currentMode==='type'){
+      const hpi=document.getElementById('note-hpi').value.trim();
+      const vitals=document.getElementById('note-vitals').value.trim();
+      const exam=document.getElementById('note-exam').value.trim();
+      const ap=document.getElementById('note-ap').value.trim();
+      summaryForClarify=`HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam/labs: '+exam:''}${ap?'\nA&P: '+ap:''}`;
+    }else{
+      summaryForClarify=document.getElementById('note-supp').value.trim()||'(photo notes provided)';
+    }
+
+    const clarifyPrompt=`You are reviewing a medical student's note before generating it. Based on what they've written, identify 2-3 questions whose answers would meaningfully improve the note — missing vitals, unclear history elements, or key findings not documented.
+
+Note content:
+${summaryForClarify}
+
+Return ONLY valid JSON:
+{
+  "questions": [
+    {
+      "text": "Was there an orthostatic blood pressure check?",
+      "type": "options",
+      "options": ["Yes, positive", "Yes, negative", "Not checked"]
+    },
+    {
+      "text": "Any prior cardiac history?",
+      "type": "options",
+      "options": ["No", "HTN", "HF", "CAD", "Arrhythmia"]
+    }
+  ]
+}
+
+Types: "options" (pick one) or "text" (free text). Max 3 questions. If the note is comprehensive enough, return {"questions": []}`;
+
+    const data=await callAPI({messages:[{role:'user',content:clarifyPrompt}]});
+    const raw=data.content?.map(b=>b.text||'').join('')||'';
+    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    if(!parsed.questions||parsed.questions.length===0){
+      // No questions needed, go straight to note
+      await generateNote({});
+    }else{
+      showClarifyModal(parsed.questions);
+    }
+  }catch(e){
+    // On any error with clarify step, just proceed
+    await generateNote({});
+  }finally{
+    btn.classList.remove('loading');btn.disabled=false;
+  }
+}
+
+// ── Clarify modal ────────────────────────────────────────────
+let clarifyQuestions=[];
+function showClarifyModal(questions){
+  clarifyQuestions=questions;
+  const container=document.getElementById('clarify-questions');
+  container.innerHTML='';
+  questions.forEach((q,i)=>{
+    const div=document.createElement('div');div.className='clarify-q';
+    div.innerHTML=`<div class="clarify-q-text">${escHtml(q.text)}</div>`;
+    if(q.type==='options'){
+      const opts=document.createElement('div');opts.className='clarify-options';
+      q.options.forEach(opt=>{
+        const btn=document.createElement('button');btn.className='clarify-opt';btn.textContent=opt;
+        btn.dataset.qi=i;
+        btn.onclick=()=>{
+          opts.querySelectorAll('.clarify-opt').forEach(b=>b.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+        opts.appendChild(btn);
+      });
+      div.appendChild(opts);
+    }else{
+      div.innerHTML+=`<input class="clarify-input" type="text" data-qi="${i}" placeholder="Type your answer..." />`;
+    }
+    container.appendChild(div);
+  });
+  document.getElementById('clarify-overlay').classList.add('visible');
+}
+async function proceedWithNote(skip){
+  const answers={};
+  if(!skip){
+    clarifyQuestions.forEach((q,i)=>{
+      if(q.type==='options'){
+        const sel=document.querySelector(`.clarify-opt.selected[data-qi="${i}"]`);
+        if(sel)answers[q.text]=sel.textContent;
+      }else{
+        const inp=document.querySelector(`.clarify-input[data-qi="${i}"]`);
+        if(inp&&inp.value.trim())answers[q.text]=inp.value.trim();
+      }
+    });
+  }
+  document.getElementById('clarify-overlay').classList.remove('visible');
+  await generateNote(answers);
+}
+
+// ── Note: step 2 — actually generate ────────────────────────
+async function generateNote(clarifyAnswers){
+  const btn=document.getElementById('note-btn');
+  const errorEl=document.getElementById('note-error');
+  btn.classList.add('loading');btn.disabled=true;
+
+  const clarifyContext=Object.keys(clarifyAnswers).length>0
+    ?'\n\nAdditional clarifications from the student:\n'+Object.entries(clarifyAnswers).map(([k,v])=>`- ${k}: ${v}`).join('\n')
+    :'';
+
+  let text=null;
+  if(currentMode==='photo'){
+    const noteType=document.getElementById('note-type-photo').value;
+    const extra=document.getElementById('note-extra').value.trim();
+    const supp=document.getElementById('note-supp').value.trim();
+    // Build multi-image message content
+    const content=photoFiles.map(p=>({type:'image',source:{type:'base64',media_type:p.mimeType,data:p.base64}}));
+    content.push({type:'text',text:`These are a medical student's handwritten notes (${photoFiles.length} page${photoFiles.length>1?'s':''}). Read all pages carefully.\n\nGenerate a complete, professional ${noteType}. Standard headers. Full problem-based A&P.${extra?'\nContext: '+extra:''}${supp?'\n\nAdditional info (integrate naturally):\n'+supp:''}${clarifyContext}\n\nIf illegible: [not legible]. If missing: [not documented].`});
+    text=await callClaude(
+      `You are a clinical note-writing assistant for medical students. You excel at reading handwritten medical notes. Convert raw notes into polished, professional clinical documentation.`,
+      [{role:'user',content}],
+      'note-body','note-error','note-btn'
+    );
+  }else{
+    const hpi=document.getElementById('note-hpi').value.trim();
+    const noteType=document.getElementById('note-type').value;
+    const pt=document.getElementById('note-pt').value.trim();
+    const vitals=document.getElementById('note-vitals').value.trim();
+    const exam=document.getElementById('note-exam').value.trim();
+    const ap=document.getElementById('note-ap').value.trim();
+    text=await simple(
+      `Clinical note-writing assistant for medical students. Professional, accurate, standard medical format. Problem-based A&P. Generate A&P if not provided.`,
+      `Write a ${noteType}:\n${pt?'Patient: '+pt+'\n':''}HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam/labs: '+exam:''}${ap?'\nA&P: '+ap:''}${clarifyContext}\n\nComplete note for attending review.`,
+      'note-body','note-error','note-btn'
+    );
   }
 
   if(text){
     lastNoteText=text;
     document.getElementById('test-btn').classList.add('visible');
+    document.getElementById('ai-assist-bar').classList.add('visible');
+  }
+  btn.classList.remove('loading');btn.disabled=false;
+}
+
+// ── AI Assist on A&P ─────────────────────────────────────────
+async function runAiAssist(){
+  const btn=document.getElementById('ai-assist-btn');
+  const result=document.getElementById('ai-assist-result');
+  btn.classList.add('loading');btn.disabled=true;
+  result.classList.remove('visible');result.innerHTML='';
+
+  try{
+    const prompt=`You are reviewing a clinical note written by a medical student. Focus specifically on the Assessment & Plan section.
+
+Note:
+${lastNoteText.substring(0,2500)}
+
+Provide brief, high-value feedback:
+1. **Possible additions** — diagnoses or issues that may be relevant but weren't addressed
+2. **Things to reconsider** — anything in the A&P that may not be indicated or is inconsistent with the clinical picture
+3. **Documentation gaps** — key elements missing that an attending would expect
+
+Keep it concise and actionable. 3-6 bullet points total. Do not rewrite the note — just flag the key points.`;
+
+    const data=await callAPI({messages:[{role:'user',content:prompt}]});
+    const text=data.content?.map(b=>b.text||'').join('')||'';
+    result.innerHTML=fmt(text);
+    result.classList.add('visible');
+  }catch(e){
+    result.innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
+    result.classList.add('visible');
+  }finally{
+    btn.classList.remove('loading');btn.disabled=false;
   }
 }
 
+// ── Test yourself ────────────────────────────────────────────
 async function triggerInlineQuestion(){
   const btn=document.getElementById('test-btn');
   btn.classList.add('loading');btn.disabled=true;
   document.getElementById('inline-study').classList.remove('visible');
-
   const prompt=`Generate a single high-quality USMLE Step 2 CK style multiple choice question based on this clinical note:\n\n${lastNoteText.substring(0,1500)}\n\nRequirements:\n- Question must directly relate to the diagnosis, management, or next best step for this specific patient\n- Exactly 5 answer choices A through E\n- One clearly correct answer\n- Plausible distractors\n- Focus on high-yield Step 2 topics\n\nRespond ONLY with valid JSON, no other text:\n{"question":"...","choices":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"correct":"A","explanation":"..."}`;
-
   try{
     const data=await callAPI({messages:[{role:'user',content:prompt}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';
     const q=JSON.parse(raw.replace(/```json|```/g,'').trim());
     renderInlineQuestion(q);
-  }catch(e){
-    document.getElementById('note-error').textContent='Could not generate question: '+e.message;
-  }finally{
-    btn.classList.remove('loading');btn.disabled=false;
-  }
+  }catch(e){document.getElementById('note-error').textContent='Could not generate question: '+e.message;}
+  finally{btn.classList.remove('loading');btn.disabled=false;}
 }
-
 function renderInlineQuestion(q){
   document.getElementById('inline-q').textContent=q.question;
-  const opts=document.getElementById('inline-options');
-  opts.innerHTML='';
+  const opts=document.getElementById('inline-options');opts.innerHTML='';
   ['A','B','C','D','E'].forEach(l=>{
     if(!q.choices[l])return;
-    const btn=document.createElement('button');
-    btn.className='inline-opt';
+    const btn=document.createElement('button');btn.className='inline-opt';
     btn.innerHTML=`<span class="opt-letter">${l}</span><span>${q.choices[l]}</span>`;
     btn.onclick=()=>{
       const isCorrect=l===q.correct;
-      document.querySelectorAll('.inline-opt').forEach(b=>{
-        b.disabled=true;
-        const letter=b.querySelector('.opt-letter').textContent;
-        if(letter===q.correct)b.classList.add(isCorrect&&letter===l?'correct':'reveal');
-        if(letter===l&&!isCorrect)b.classList.add('wrong');
-      });
-      const exp=document.getElementById('inline-exp');
-      exp.className='inline-exp'+(isCorrect?'':' wrong')+' visible';
-      exp.innerHTML=`<strong>${isCorrect?'Correct!':'Incorrect — correct answer: '+q.correct}</strong><br><br>${q.explanation}`;
+      document.querySelectorAll('.inline-opt').forEach(b=>{b.disabled=true;const letter=b.querySelector('.opt-letter').textContent;if(letter===q.correct)b.classList.add(isCorrect&&letter===l?'correct':'reveal');if(letter===l&&!isCorrect)b.classList.add('wrong');});
+      const exp=document.getElementById('inline-exp');exp.className='inline-exp'+(isCorrect?'':' wrong')+' visible';exp.innerHTML=`<strong>${isCorrect?'Correct!':'Incorrect — correct answer: '+q.correct}</strong><br><br>${q.explanation}`;
     };
     opts.appendChild(btn);
   });
-  document.getElementById('inline-exp').className='inline-exp';
-  document.getElementById('inline-exp').innerHTML='';
+  document.getElementById('inline-exp').className='inline-exp';document.getElementById('inline-exp').innerHTML='';
   document.getElementById('inline-study').classList.add('visible');
 }
 
+// ── Study Mode ───────────────────────────────────────────────
 async function generateQuestion(){
-  const btn=document.getElementById('study-btn');
-  const errorEl=document.getElementById('study-error');
-  const context=document.getElementById('study-context').value.trim();
-  const topicFocus=selectedTopics.length>0?selectedTopics.join(', '):'any high-yield Step 2 topic';
+  const btn=document.getElementById('study-btn'),errorEl=document.getElementById('study-error'),context=document.getElementById('study-context').value.trim(),topicFocus=selectedTopics.length>0?selectedTopics.join(', '):'any high-yield Step 2 topic';
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
-  document.getElementById('question-card').style.display='none';
-  document.getElementById('next-btn').classList.remove('visible');
-  document.getElementById('explanation-box').classList.remove('visible');
-
+  document.getElementById('question-card').style.display='none';document.getElementById('next-btn').classList.remove('visible');document.getElementById('explanation-box').classList.remove('visible');
   const prompt=`Generate a single high-quality USMLE Step 2 CK style multiple choice question.\n${context?'Base it on this clinical scenario: '+context:''}\nFocus area: ${topicFocus}\n\nRequirements:\n- Realistic clinical vignette\n- Exactly 5 answer choices A through E\n- One clearly correct answer\n- Plausible distractors\n- High-yield Step 2 topic: next best step, diagnosis, management\n\nRespond ONLY with valid JSON, no other text:\n{"question":"...","choices":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"correct":"A","explanation":"..."}`;
-
-  try{
-    const data=await callAPI({messages:[{role:'user',content:prompt}]});
-    const raw=data.content?.map(b=>b.text||'').join('')||'';
-    const q=JSON.parse(raw.replace(/```json|```/g,'').trim());
-    renderQuestion(q);
-  }catch(e){
-    errorEl.textContent='Error: '+e.message;
-  }finally{
-    btn.classList.remove('loading');btn.disabled=false;
-  }
+  try{const data=await callAPI({messages:[{role:'user',content:prompt}]});const raw=data.content?.map(b=>b.text||'').join('')||'';const q=JSON.parse(raw.replace(/```json|```/g,'').trim());renderQuestion(q);}
+  catch(e){errorEl.textContent='Error: '+e.message;}
+  finally{btn.classList.remove('loading');btn.disabled=false;}
 }
-
 function renderQuestion(q){
   document.getElementById('question-text').textContent=q.question;
   const grid=document.getElementById('options-grid');grid.innerHTML='';
   ['A','B','C','D','E'].forEach(l=>{
     if(!q.choices[l])return;
-    const btn=document.createElement('button');
-    btn.className='option-btn';
+    const btn=document.createElement('button');btn.className='option-btn';
     btn.innerHTML=`<span class="option-letter">${l}</span><span>${q.choices[l]}</span>`;
     btn.onclick=()=>{
       const isCorrect=l===q.correct;
       if(isCorrect)scoreCorrect++;else scoreWrong++;
-      document.getElementById('score-correct').textContent=scoreCorrect;
-      document.getElementById('score-wrong').textContent=scoreWrong;
-      document.querySelectorAll('.option-btn').forEach(b=>{
-        b.disabled=true;
-        const letter=b.querySelector('.option-letter').textContent;
-        if(letter===q.correct)b.classList.add(isCorrect&&letter===l?'correct':'reveal-correct');
-        if(letter===l&&!isCorrect)b.classList.add('wrong');
-      });
-      const exp=document.getElementById('explanation-box');
-      exp.className='explanation-box'+(isCorrect?'':' wrong-exp')+' visible';
-      exp.innerHTML=`<strong>${isCorrect?'Correct!':'Incorrect — correct answer: '+q.correct}</strong><br><br>${q.explanation}`;
+      document.getElementById('score-correct').textContent=scoreCorrect;document.getElementById('score-wrong').textContent=scoreWrong;
+      document.querySelectorAll('.option-btn').forEach(b=>{b.disabled=true;const letter=b.querySelector('.option-letter').textContent;if(letter===q.correct)b.classList.add(isCorrect&&letter===l?'correct':'reveal-correct');if(letter===l&&!isCorrect)b.classList.add('wrong');});
+      const exp=document.getElementById('explanation-box');exp.className='explanation-box'+(isCorrect?'':' wrong-exp')+' visible';exp.innerHTML=`<strong>${isCorrect?'Correct!':'Incorrect — correct answer: '+q.correct}</strong><br><br>${q.explanation}`;
       document.getElementById('next-btn').classList.add('visible');
     };
     grid.appendChild(btn);
   });
-  document.getElementById('explanation-box').className='explanation-box';
-  document.getElementById('explanation-box').innerHTML='';
+  document.getElementById('explanation-box').className='explanation-box';document.getElementById('explanation-box').innerHTML='';
   document.getElementById('question-card').style.display='block';
 }
 
