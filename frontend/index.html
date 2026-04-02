@@ -379,9 +379,9 @@
 
     </div>
 
-    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;padding:12px 14px;background:var(--surface2);border-radius:8px;cursor:pointer;" onclick="toggleAck(this)">
-      <div id="ack-check" style="width:18px;height:18px;border:2px solid var(--border2);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;"></div>
-      <div style="font-size:12px;color:var(--text);line-height:1.6;">I understand that Chinwe is an AI educational tool, not a clinical reference. I will not enter real patient identifiers. I accept responsibility for HIPAA compliance in my use of this app.</div>
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;padding:12px 14px;background:var(--surface2);border-radius:8px;cursor:pointer;" onclick="toggleAck()">
+      <div id="ack-check" style="width:20px;height:20px;border:2px solid var(--border2);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;pointer-events:none;"></div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6;pointer-events:none;">I understand that Chinwe is an AI educational tool, not a clinical reference. I will not enter real patient identifiers. I accept responsibility for HIPAA compliance in my use of this app.</div>
     </div>
 
     <button id="enter-btn" onclick="enterApp()" disabled style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;cursor:not-allowed;font-family:var(--sans);opacity:0.4;transition:all 0.2s;">Enter Chinwe</button>
@@ -915,7 +915,7 @@ let currentMode='type',photoFiles=[],selectedTopics=[],scoreCorrect=0,scoreWrong
   }
 })();
 let ackChecked=false;
-function toggleAck(row){
+function toggleAck(){
   ackChecked=!ackChecked;
   const check=document.getElementById('ack-check');
   const btn=document.getElementById('enter-btn');
@@ -923,6 +923,11 @@ function toggleAck(row){
     check.style.background='var(--accent)';check.style.borderColor='var(--accent)';
     check.innerHTML='<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4L4 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';
+  }else{
+    check.style.background='';check.style.borderColor='var(--border2)';check.innerHTML='';
+    btn.disabled=true;btn.style.opacity='0.4';btn.style.cursor='not-allowed';
+  }
+}yle.cursor='pointer';
   }else{
     check.style.background='';check.style.borderColor='var(--border2)';check.innerHTML='';
     btn.disabled=true;btn.style.opacity='0.4';btn.style.cursor='not-allowed';
