@@ -257,145 +257,11 @@
   .topic-chip { background: rgba(180,83,9,0.08); border: 1px solid rgba(180,83,9,0.2); color: #92400e; border-radius: 20px; padding: 4px 12px; font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); font-weight: 500; }
   .topic-chip:hover { background: rgba(180,83,9,0.15); border-color: #b45309; }
   .topic-chip.active { background: #b45309; color: #fff; border-color: #b45309; }
-
-  /* Print / PDF export */
-  .pdf-btn { background: none; border: 1px solid var(--border2); color: var(--muted2); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: var(--sans); transition: all 0.15s; }
-  .pdf-btn:hover { color: var(--blue); border-color: var(--blue); }
-  @media print {
-    .topbar, .input-section, #splash, .ai-assist-bar, .inline-study, .test-btn, .panel:not(.active) { display: none !important; }
-    body { background: #fff; }
-    .main { padding: 0; max-width: 100%; }
-    .panel.active { display: block !important; }
-    .response-section { display: block !important; box-shadow: none; border: none; padding: 0; }
-    .response-header { border-bottom: 1px solid #ddd; margin-bottom: 12px; }
-    .response-actions { display: none; }
-    .grade-card { display: block !important; border: 1px solid #ddd; }
-    .hx-section-body { display: block !important; }
-    .hx-section-arrow { display: none; }
-  }
-
-  /* Physical exam maneuver modal */
-  .maneuver-tag { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,151,167,0.1); color: var(--teal); border: 1px solid rgba(0,151,167,0.3); border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 600; cursor: pointer; font-family: var(--mono); white-space: nowrap; transition: all 0.15s; margin-left: 4px; vertical-align: middle; }
-  .maneuver-tag:hover { background: var(--teal); color: #fff; }
-  .maneuver-modal-overlay { position: fixed; inset: 0; background: rgba(13,46,38,0.5); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
-  .maneuver-modal-overlay.visible { display: flex; }
-  .maneuver-modal { background: var(--surface); border-radius: 14px; padding: 24px; max-width: 560px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.2); border: 1px solid rgba(0,151,167,0.2); max-height: 80vh; overflow-y: auto; }
-  .maneuver-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .maneuver-modal-title { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--teal); letter-spacing: 0.05em; }
-  .maneuver-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted2); padding: 2px 6px; border-radius: 4px; }
-  .maneuver-close:hover { color: var(--text); background: var(--surface2); }
-  .maneuver-desc { font-size: 13px; line-height: 1.75; color: var(--text); margin-bottom: 16px; }
-  .maneuver-desc strong { color: var(--accent2); }
-  .maneuver-images { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-  .maneuver-img-card { border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; background: var(--surface2); }
-  .maneuver-img-card img { width: 100%; height: 160px; object-fit: cover; display: block; }
-  .maneuver-img-caption { font-size: 10px; color: var(--muted2); padding: 5px 8px; font-family: var(--mono); }
-  .maneuver-loading { font-size: 12px; color: var(--muted2); text-align: center; padding: 20px; font-family: var(--mono); }
-
-  /* Profile / settings */
-  .profile-bar { display: flex; align-items: center; gap: 8px; }
-  .profile-chip { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 500; color: #fff; cursor: pointer; font-family: var(--sans); transition: all 0.15s; white-space: nowrap; }
-  .profile-chip:hover { background: rgba(255,255,255,0.25); }
-  .settings-overlay { position: fixed; inset: 0; background: rgba(13,46,38,0.5); z-index: 300; display: none; align-items: flex-start; justify-content: flex-end; }
-  .settings-overlay.visible { display: flex; }
-  .settings-panel { background: var(--surface); width: 100%; max-width: 420px; height: 100vh; overflow-y: auto; box-shadow: -4px 0 32px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
-  .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border2); position: sticky; top: 0; background: var(--surface); z-index: 1; }
-  .settings-title { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent2); }
-  .settings-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted2); }
-  .settings-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 24px; }
-  .settings-section { display: flex; flex-direction: column; gap: 10px; }
-  .settings-section-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); font-weight: 500; }
-  .profile-list { display: flex; flex-direction: column; gap: 6px; }
-  .profile-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border: 1.5px solid var(--border2); border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: all 0.15s; }
-  .profile-item:hover { border-color: var(--accent); }
-  .profile-item.active { border-color: var(--accent); background: var(--accent-dim); }
-  .profile-item-name { font-size: 13px; font-weight: 500; color: var(--text); }
-  .profile-item-sub { font-size: 11px; color: var(--muted2); margin-top: 2px; }
-  .profile-delete { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
-  .profile-delete:hover { color: var(--red); background: rgba(229,57,53,0.08); }
-  .new-profile-row { display: flex; gap: 8px; }
-  .new-profile-input { flex: 1; background: var(--surface2); border: 1.5px solid var(--border2); border-radius: 7px; padding: 8px 11px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
-  .new-profile-input:focus { border-color: var(--accent); }
-  .new-profile-btn { background: var(--accent); color: #fff; border: none; border-radius: 7px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans); white-space: nowrap; }
-  .settings-textarea { width: 100%; background: var(--surface2); border: 1.5px solid var(--border2); border-radius: 7px; padding: 10px; font-family: var(--sans); font-size: 12px; color: var(--text); outline: none; resize: vertical; line-height: 1.6; min-height: 80px; }
-  .settings-textarea:focus { border-color: var(--accent); }
-  .settings-save-btn { background: var(--accent); color: #fff; border: none; border-radius: 7px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--sans); align-self: flex-start; }
-  .settings-save-btn:hover { background: var(--accent2); }
-  .acronym-row { display: flex; gap: 6px; align-items: center; }
-  .acronym-key { font-family: var(--mono); font-size: 12px; background: rgba(0,168,120,0.1); color: var(--accent2); border-radius: 4px; padding: 2px 8px; }
-  .acronym-val { font-size: 12px; color: var(--muted2); }
-  .acronym-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; margin-left: auto; }
-  .acronym-del:hover { color: var(--red); }
 </style>
 </head>
 <body>
-
-<!-- ── Splash / Disclaimer ── -->
-<div id="splash" style="position:fixed;inset:0;background:#eef7f5;z-index:9999;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;">
-  <div style="background:#fff;border:1px solid rgba(0,160,120,0.2);border-radius:16px;padding:32px;max-width:480px;width:100%;box-shadow:0 4px 32px rgba(0,120,90,0.08);margin:auto;">
-
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-      <div style="width:9px;height:9px;background:#00a878;border-radius:50%;flex-shrink:0;"></div>
-      <span style="font-family:monospace;font-size:18px;font-weight:500;color:#008f65;letter-spacing:0.1em;">CHINWE</span>
-    </div>
-
-    <div style="font-size:15px;font-weight:600;color:#0d2e26;margin-bottom:4px;">AI-powered clinical assistant for medical students</div>
-    <div style="font-size:13px;color:#6b9e90;margin-bottom:20px;">Before you continue, please read and acknowledge the following.</div>
-
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
-
-      <div style="background:#fff8f0;border:1px solid rgba(234,108,0,0.2);border-radius:10px;padding:12px 14px;display:flex;gap:10px;">
-        <span style="font-size:16px;flex-shrink:0;">⚠️</span>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:#ea6c00;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px;">Not a clinical decision tool</div>
-          <div style="font-size:12px;color:#0d2e26;line-height:1.6;">Chinwe is an AI educational aid. It will make mistakes. Always verify with your attending and primary sources.</div>
-        </div>
-      </div>
-
-      <div style="background:#fff0f0;border:1px solid rgba(229,57,53,0.2);border-radius:10px;padding:12px 14px;display:flex;gap:10px;">
-        <span style="font-size:16px;flex-shrink:0;">🔒</span>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:#e53935;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px;">De-identify before you type</div>
-          <div style="font-size:12px;color:#0d2e26;line-height:1.6;margin-bottom:8px;">Chinwe is not HIPAA-compliant. Strip these before entering anything:</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
-            <div style="background:rgba(229,57,53,0.06);border-radius:5px;padding:5px 8px;font-size:11px;"><b style="color:#e53935;">Name</b> → "the patient"</div>
-            <div style="background:rgba(229,57,53,0.06);border-radius:5px;padding:5px 8px;font-size:11px;"><b style="color:#e53935;">MRN / IDs</b> → omit</div>
-            <div style="background:rgba(229,57,53,0.06);border-radius:5px;padding:5px 8px;font-size:11px;"><b style="color:#e53935;">Date of birth</b> → age only</div>
-            <div style="background:rgba(229,57,53,0.06);border-radius:5px;padding:5px 8px;font-size:11px;"><b style="color:#e53935;">Specific dates</b> → "3 days ago"</div>
-            <div style="background:rgba(229,57,53,0.06);border-radius:5px;padding:5px 8px;font-size:11px;"><b style="color:#e53935;">Address</b> → omit</div>
-            <div style="background:rgba(229,57,53,0.06);border-radius:5px;padding:5px 8px;font-size:11px;"><b style="color:#e53935;">Phone / email</b> → omit</div>
-          </div>
-          <div style="font-size:11px;color:#6b9e90;margin-top:6px;">✓ Age, sex, vitals, labs, exam, PMH, meds — all fine.</div>
-        </div>
-      </div>
-
-      <div style="background:#f0f7ff;border:1px solid rgba(29,111,164,0.2);border-radius:10px;padding:12px 14px;display:flex;gap:10px;">
-        <span style="font-size:16px;flex-shrink:0;">📋</span>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:#1d6fa4;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px;">Your responsibility</div>
-          <div style="font-size:12px;color:#0d2e26;line-height:1.6;">By using Chinwe you accept full responsibility for appropriate de-identification per HIPAA Safe Harbor. When in doubt, leave it out.</div>
-        </div>
-      </div>
-
-    </div>
-
-    <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;cursor:pointer;padding:10px;background:#f2faf8;border-radius:8px;">
-      <input type="checkbox" id="ack-checkbox" onchange="handleAck(this)" style="width:18px;height:18px;margin-top:1px;accent-color:#00a878;flex-shrink:0;cursor:pointer;" />
-      <span style="font-size:12px;color:#0d2e26;line-height:1.6;">I understand that Chinwe is an AI educational tool, not a clinical reference. I will not enter real patient identifiers and I accept responsibility for HIPAA compliance.</span>
-    </label>
-
-    <button id="enter-btn" onclick="enterApp()" disabled style="width:100%;background:#00a878;color:#fff;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;cursor:not-allowed;opacity:0.4;transition:all 0.2s;font-family:inherit;">Enter Chinwe</button>
-    <div style="font-size:11px;color:#6b9e90;text-align:center;margin-top:10px;">Stored locally — you won't see this again on this device.</div>
-  </div>
-</div>
-
-<div class="topbar" id="main-topbar" style="display:none;">
+<div class="topbar">
   <div class="logo"><div class="logo-dot"></div>CHINWE</div>
-  <div class="profile-bar">
-    <button class="profile-chip" onclick="openSettings()">
-      <span id="topbar-profile-name">⚙ Settings</span>
-    </button>
-  </div>
   <div class="tab-bar">
     <div class="tab-group workflow">
       <button class="tab active" onclick="switchTab('hx')" id="tab-hx"><span class="tab-step"><span class="tab-step-num">1</span>H&amp;X Coach</span></button>
@@ -423,7 +289,7 @@
   </div>
 </div>
 
-<div class="main" id="main-content" style="display:none;">
+<div class="main">
 
   <!-- 1 H&X -->
   <div class="panel active" id="panel-hx">
@@ -517,13 +383,7 @@
         <div id="intake-type">
           <div class="field" style="margin-bottom:10px;">
             <label>Patient info & findings from your encounter</label>
-            <div style="display:flex;gap:8px;align-items:flex-start;">
-              <textarea id="present-findings-text" placeholder="e.g. 68F, PMH HTN DM2. CC chest pain x2 days. Vitals: BP 158/92, HR 88, afebrile, O2 98%. Exam: no JVD, lungs clear, no peripheral edema. EKG normal sinus. Troponin x2 negative. CXR clear. Attending suspects MSK..." style="min-height:100px;flex:1;"></textarea>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px;">
-                <button id="findings-mic-btn" onclick="toggleFindingsMic()" title="Speak your findings" style="width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border2);color:var(--muted2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;">🎙</button>
-                <div id="findings-mic-label" style="font-size:9px;color:var(--muted);font-family:var(--mono);text-align:center;">tap</div>
-              </div>
-            </div>
+            <textarea id="present-findings-text" placeholder="e.g. 68F, PMH HTN DM2. CC chest pain x2 days. Vitals: BP 158/92, HR 88, afebrile, O2 98%. Exam: no JVD, lungs clear, no peripheral edema. EKG normal sinus. Troponin x2 negative. CXR clear. Attending suspects MSK..." style="min-height:100px;"></textarea>
           </div>
         </div>
 
@@ -553,14 +413,6 @@
         <div id="present-extracted" style="display:none;margin-top:14px;">
           <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--purple);margin-bottom:6px;">Extracted patient summary — edit if needed</div>
           <textarea id="present-patient" style="width:100%;min-height:80px;background:#fff;border:1.5px solid rgba(124,58,237,0.3);border-radius:8px;padding:10px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;line-height:1.6;" placeholder="Extracted summary will appear here..."></textarea>
-        </div>
-
-        <!-- Pertinent negatives follow-up — shown after extract -->
-        <div id="neg-followup" style="display:none;margin-top:14px;">
-          <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--orange);margin-bottom:8px;font-weight:500;">⚡ Quick follow-up — pertinent negatives</div>
-          <div style="font-size:12px;color:var(--muted2);margin-bottom:10px;line-height:1.5;">These are commonly missed. Answer what you know — skip the rest.</div>
-          <div id="neg-questions" style="display:flex;flex-direction:column;gap:10px;"></div>
-          <button onclick="applyNegatives()" style="margin-top:12px;padding:7px 16px;background:var(--purple);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">Add to summary ↗</button>
         </div>
       </div>
 
@@ -638,7 +490,6 @@
         <span class="response-tag tag-present">Generated Presentation</span>
         <div class="response-actions">
           <button class="copy-btn" onclick="copyResponse('present-gen-body')">Copy</button>
-          <button class="pdf-btn" onclick="exportPDF('present-gen-body','Oral Presentation')">⬇ PDF</button>
           <button class="copy-btn" onclick="sendToNote()" style="color:var(--teal);border-color:rgba(0,151,167,0.3);">→ Send to Note</button>
         </div>
       </div>
@@ -707,7 +558,6 @@
         <span class="response-tag tag-note">Clinical Note</span>
         <div class="response-actions">
           <button class="copy-btn" onclick="copyResponse('note-body')">Copy</button>
-          <button class="pdf-btn" onclick="exportPDF('note-body','Clinical Note')">⬇ PDF</button>
           <button class="test-btn" id="test-btn" onclick="triggerInlineQuestion()"><div class="spinner"></div><span class="test-btn-text">✦ Test yourself</span></button>
         </div>
       </div>
@@ -755,7 +605,7 @@
       <div class="error-text" id="ddx-error"></div>
     </div>
     <div class="response-section" id="ddx-response">
-      <div class="response-header"><span class="response-tag tag-ddx">Differential Diagnosis</span><div class="response-actions"><button class="copy-btn" onclick="copyResponse('ddx-body')">Copy</button><button class="pdf-btn" onclick="exportPDF('ddx-body','Differential Diagnosis')">⬇ PDF</button></div></div>
+      <div class="response-header"><span class="response-tag tag-ddx">Differential Diagnosis</span><div class="response-actions"><button class="copy-btn" onclick="copyResponse('ddx-body')">Copy</button></div></div>
       <div class="response-body" id="ddx-body"></div>
     </div>
   </div>
@@ -780,19 +630,12 @@
         <div class="chip" onclick="fillGuide('sepsis')">Sepsis bundle</div>
         <div class="chip" onclick="fillGuide('pe')">PE workup & Rx</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;">
-        <button class="run-btn" id="guide-btn" onclick="runGuide()" style="margin-top:0;"><div class="spinner"></div><span class="btn-text">Pull Guidelines ↗</span></button>
-        <button class="run-btn" id="recent-guide-btn" onclick="runRecentGuidelines()" style="margin-top:0;background:var(--blue);"><div class="spinner"></div><span class="btn-text">🔍 Recent updates</span></button>
-      </div>
+      <button class="run-btn" id="guide-btn" onclick="runGuide()"><div class="spinner"></div><span class="btn-text">Pull Guidelines ↗</span></button>
       <div class="error-text" id="guide-error"></div>
     </div>
     <div class="response-section" id="guide-response">
-      <div class="response-header"><span class="response-tag tag-guide">Clinical Guidelines</span><div class="response-actions"><button class="copy-btn" onclick="copyResponse('guide-body')">Copy</button><button class="pdf-btn" onclick="exportPDF('guide-body','Clinical Guidelines')">⬇ PDF</button></div></div>
+      <div class="response-header"><span class="response-tag tag-guide">Clinical Guidelines</span><div class="response-actions"><button class="copy-btn" onclick="copyResponse('guide-body')">Copy</button></div></div>
       <div class="response-body" id="guide-body"></div>
-    </div>
-    <div class="response-section" id="recent-guide-response">
-      <div class="response-header"><span class="response-tag" style="background:rgba(29,111,164,0.1);color:var(--blue);border:1px solid rgba(29,111,164,0.25);">Recent Updates</span><div class="response-actions"><button class="copy-btn" onclick="copyResponse('recent-guide-body')">Copy</button><button class="pdf-btn" onclick="exportPDF('recent-guide-body','Recent Guidelines')">⬇ PDF</button></div></div>
-      <div class="response-body" id="recent-guide-body"></div>
     </div>
   </div>
 
@@ -832,103 +675,9 @@
   </div>
 
 </div>
-<!-- ── Maneuver modal ── -->
-<div class="maneuver-modal-overlay" id="maneuver-overlay">
-  <div class="maneuver-modal">
-    <div class="maneuver-modal-header">
-      <div class="maneuver-modal-title" id="maneuver-title">—</div>
-      <button class="maneuver-close" onclick="closeManeuver()">✕</button>
-    </div>
-    <div id="maneuver-body"><div class="maneuver-loading">Loading...</div></div>
-  </div>
-</div>
-
-<!-- ── Settings panel ── -->
-<div class="settings-overlay" id="settings-overlay" onclick="closeSettings(event)">
-  <div class="settings-panel" onclick="event.stopPropagation()">
-    <div class="settings-header">
-      <div class="settings-title">Profiles & Settings</div>
-      <button class="settings-close" onclick="closeSettings()">✕</button>
-    </div>
-    <div class="settings-body">
-
-      <!-- Profiles -->
-      <div class="settings-section">
-        <div class="settings-section-label">Profile</div>
-        <div class="profile-list" id="profile-list"></div>
-        <div class="new-profile-row">
-          <input class="new-profile-input" id="new-profile-name" placeholder="New profile name (e.g. Dr. Smith rotation)" />
-          <button class="new-profile-btn" onclick="createProfile()">+ Add</button>
-        </div>
-      </div>
-
-      <!-- Acronym dictionary -->
-      <div class="settings-section">
-        <div class="settings-section-label">Custom acronyms</div>
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:8px;line-height:1.5;">Teach the app your shorthand. Claude will expand these when reading your notes.</div>
-        <div id="acronym-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
-        <div style="display:flex;gap:6px;">
-          <input class="new-profile-input" id="acronym-key" placeholder="NVP" style="width:80px;flex:none;" />
-          <input class="new-profile-input" id="acronym-val" placeholder="nausea, vomiting, pain" style="flex:1;" />
-          <button class="new-profile-btn" onclick="addAcronym()">Add</button>
-        </div>
-      </div>
-
-      <!-- Note template -->
-      <div class="settings-section">
-        <div class="settings-section-label">SOAP / Note template</div>
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:8px;line-height:1.5;">Paste an example note your attending has approved. Claude will use this as a style reference.</div>
-        <textarea class="settings-textarea" id="note-template" placeholder="Paste an example note here..." style="min-height:120px;"></textarea>
-        <button class="settings-save-btn" onclick="saveSetting('note-template')">Save template</button>
-      </div>
-
-      <!-- Presentation style -->
-      <div class="settings-section">
-        <div class="settings-section-label">Presentation style preferences</div>
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:8px;line-height:1.5;">Any specific format or style your attending prefers. Claude will follow this when generating or critiquing presentations.</div>
-        <textarea class="settings-textarea" id="pres-style" placeholder="e.g. Always state one-liner first. Keep HPI under 60 seconds. Attending hates passive voice. Always end with your assessment before the plan..." style="min-height:80px;"></textarea>
-        <button class="settings-save-btn" onclick="saveSetting('pres-style')">Save style</button>
-      </div>
-
-      <!-- Feedback verbosity -->
-      <div class="settings-section">
-        <div class="settings-section-label">Feedback verbosity</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="difficulty-btn" id="verb-concise" onclick="setVerbosity('concise')">Concise</button>
-          <button class="difficulty-btn active" id="verb-standard" onclick="setVerbosity('standard')">Standard</button>
-          <button class="difficulty-btn" id="verb-detailed" onclick="setVerbosity('detailed')">Detailed</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 <script>
 const API_BASE=window.location.hostname==='localhost'?'http://localhost:3001':'https://chinwe-production.up.railway.app';
 let currentMode='type',photoFiles=[],selectedTopics=[],scoreCorrect=0,scoreWrong=0,lastNoteText='',pendingNoteParams=null,presentMode='teach',presentSummary='';
-
-// ── Splash / disclaimer ──────────────────────────────────────
-(function(){
-  if(localStorage.getItem('chinwe_ack')==='1'){
-    const s=document.getElementById('splash');if(s)s.style.display='none';
-  }
-})();
-let ackChecked=false;
-function handleAck(checkbox){
-  ackChecked=checkbox.checked;
-  const btn=document.getElementById('enter-btn');
-  btn.disabled=!ackChecked;
-  btn.style.opacity=ackChecked?'1':'0.4';
-  btn.style.cursor=ackChecked?'pointer':'not-allowed';
-}
-function enterApp(){
-  if(!ackChecked)return;
-  localStorage.setItem('chinwe_ack','1');
-  const s=document.getElementById('splash');
-  s.style.transition='opacity 0.3s';s.style.opacity='0';
-  setTimeout(()=>s.style.display='none',300);
-}
 
 function switchTab(n){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+n).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
 function setMode(m){currentMode=m;document.getElementById('mode-type').classList.toggle('active',m==='type');document.getElementById('mode-photo').classList.toggle('active',m==='photo');document.getElementById('typed-inputs').style.display=m==='type'?'block':'none';document.getElementById('photo-inputs').style.display=m==='photo'?'block':'none';}
@@ -1012,14 +761,12 @@ async function extractFindings(){
     let messages;
     if(intakeMode==='photo'){
       if(presentPhotoFiles.length===0){errorEl.textContent='Add at least one photo first.';btn.classList.remove('loading');btn.disabled=false;return;}
-      const acronymCtxPhoto=getAcronyms().map(a=>a.key+'='+a.val).join(', ');
-    const content=presentPhotoFiles.map(p=>({type:'image',source:{type:'base64',media_type:p.mimeType,data:p.base64}}));
+      const content=presentPhotoFiles.map(p=>({type:'image',source:{type:'base64',media_type:p.mimeType,data:p.base64}}));
       const supp=document.getElementById('present-findings-supp').value.trim();
-      content.push({type:'text',text:`These are a medical student's encounter notes. Extract and organize all the clinical information into a concise patient summary suitable for an oral presentation.${supp?'\\n\\nAdditional notes: '+supp:''}${acronymCtxPhoto?' \\n\\nCustom acronyms used by this student (expand these when you see them): '+acronymCtxPhoto:''}\\n\\nReturn a clean paragraph or two: patient demographics, chief complaint, key history, vitals, exam findings, labs/imaging, and any working diagnosis if mentioned. If something is illegible write [illegible].`});
+      content.push({type:'text',text:`These are a medical student's encounter notes. Extract and organize all the clinical information into a concise patient summary suitable for an oral presentation.${supp?'\\n\\nAdditional notes: '+supp:''}\\n\\nReturn a clean paragraph or two: patient demographics, chief complaint, key history, vitals, exam findings, labs/imaging, and any working diagnosis if mentioned. If something is illegible write [illegible].`});
       messages=[{role:'user',content}];
     }else{
-      const rawText=document.getElementById('present-findings-text').value.trim();
-      const text=expandAcronyms(rawText);
+      const text=document.getElementById('present-findings-text').value.trim();
       if(!text){errorEl.textContent='Enter your findings first.';btn.classList.remove('loading');btn.disabled=false;return;}
       messages=[{role:'user',content:`Organize these clinical encounter notes into a clean patient summary for oral presentation:\\n\\n${text}\\n\\nReturn a concise 1-2 paragraph summary: patient demographics, chief complaint, history, vitals, exam, labs/imaging, working diagnosis. Keep all clinical details.`}];
     }
@@ -1029,8 +776,6 @@ async function extractFindings(){
     document.getElementById('present-extracted').style.display='block';
     document.getElementById('present-mode-section').style.display='block';
     document.getElementById('present-mode-section').scrollIntoView({behavior:'smooth',block:'start'});
-    // Fetch pertinent negatives in background
-    fetchPertinentNegatives(summary).then(qs => renderNegFollowup(qs));
   }catch(e){errorEl.textContent='Error: '+e.message;}
   finally{btn.classList.remove('loading');btn.disabled=false;}
 }
@@ -1127,9 +872,7 @@ Rules:
 - Each item: "text" (shorthand, no question marks except Attending Pearls), "highYield" (bool), "rationale" (1 sentence plain ASCII)
 - 3-4 items per section max, 1-2 highYield per section
 - Attending Pearls: full sentences, teaching points not patient questions
-- If chart context provided, tailor items to this specific patient
-- For Physical Exam section items: if a specific named clinical maneuver is relevant (e.g. Lachman test, Empty Can test, Phalen test, Dix-Hallpike), add "maneuver": "Exact Maneuver Name" to that item. Otherwise omit the maneuver field.
-- Example with maneuver: {"text": "Rotator cuff integrity", "highYield": true, "rationale": "Differentiates impingement from full-thickness tear.", "maneuver": "Empty Can test"}`;
+- If chart context provided, tailor items to this specific patient`;
   try{
     const data=await callAPI({max_tokens:6000,messages:[{role:'user',content:prompt}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';
@@ -1155,8 +898,7 @@ function renderHxOutput(data){
         itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main hx-pearl">${escHtml(item.text)}</span></div>`;
       }else{
         const uid=`why-${si}-${ii}`;
-        const maneuverBtn=item.maneuver?`<button class="maneuver-tag" onclick="openManeuver('${escHtml(item.maneuver).replace(/'/g,'\\'')}')"># ${escHtml(item.maneuver)}</button>`:'';
-        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${escHtml(item.text)}${maneuverBtn}</span><button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button></div><div class="why-rationale" id="${uid}">${escHtml(item.rationale)}</div>`;
+        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${escHtml(item.text)}</span><button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button></div><div class="why-rationale" id="${uid}">${escHtml(item.rationale)}</div>`;
       }
       items.appendChild(itemEl);
     });
@@ -1209,9 +951,7 @@ function runGenerate(){
   const patient=document.getElementById('present-patient').value.trim();
   if(!patient){document.getElementById('present-gen-error').textContent='No patient data — extract findings or generate a case first.';return;}
   const {label:settingLabel,level,expectation}=getSettingContext();
-  const presStyle=getActiveProfileData('pres-style');
-  const noteTempl=getActiveProfileData('note-template');
-  simple(`You are an expert clinical educator coaching a ${level} student. Generate a ${settingLabel} oral presentation. Format expectations: ${expectation}${presStyle?' Attending style preferences: '+presStyle:''} Be specific to this setting — what's appropriate here differs from other settings.`,`Patient data:\n${patient}\n\nGenerate a complete oral presentation formatted for the ${settingLabel} setting.`,'present-gen-body','present-gen-error','present-gen-btn');
+  simple(`You are an expert clinical educator coaching a ${level} student. Generate a ${settingLabel} oral presentation. Format expectations: ${expectation} Be specific to this setting — what's appropriate here differs from other settings.`,`Patient data:\n${patient}\n\nGenerate a complete oral presentation formatted for the ${settingLabel} setting.`,'present-gen-body','present-gen-error','present-gen-btn');
 }
 
 let recognition=null,isRecording=false;
@@ -1233,14 +973,13 @@ async function runCritique(){
   if(!transcript){document.getElementById('critique-error').textContent='Add your presentation first.';return;}
   const patient=document.getElementById('present-patient').value.trim();
   const {label:settingLabel,level,expectation}=getSettingContext();
-  const presStyle=getActiveProfileData('pres-style');
   const btn=document.getElementById('critique-btn'),errorEl=document.getElementById('critique-error');
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
   document.getElementById('grade-card').classList.remove('visible');
   try{
     const data=await callAPI({max_tokens:600,messages:[{role:'user',content:`You are an attending physician grading a ${level} student's oral presentation in the ${settingLabel} setting.
 
-Setting expectations: ${expectation}${presStyle?' Attending style preferences: '+presStyle:''}
+Setting expectations: ${expectation}
 
 Patient context: ${patient||'not specified'}
 Student presentation: "${transcript}"
@@ -1288,15 +1027,12 @@ async function generateNote(clarifyAnswers){
   let text=null;
   if(currentMode==='photo'){
     const noteType=document.getElementById('note-type-photo').value,extra=document.getElementById('note-extra').value.trim(),supp=document.getElementById('note-supp').value.trim();
-    const acronymCtxNote=getAcronyms().map(a=>a.key+'='+a.val).join(', ');
     const content=photoFiles.map(p=>({type:'image',source:{type:'base64',media_type:p.mimeType,data:p.base64}}));
     content.push({type:'text',text:`Medical student handwritten notes (${photoFiles.length} page${photoFiles.length>1?'s':''}). Read all pages carefully.\n\nGenerate a complete professional ${noteType}. Standard headers. Full problem-based A&P.${extra?'\nContext: '+extra:''}${supp?'\n\nAdditional info:\n'+supp:''}${cc}${pc}\n\nIf illegible: [not legible]. If missing: [not documented].`});
     text=await callClaude(`Clinical note-writing assistant for medical students. Convert raw notes into polished professional clinical documentation.`,[{role:'user',content}],'note-body','note-error','note-btn');
   }else{
     const hpi=document.getElementById('note-hpi').value.trim(),noteType=document.getElementById('note-type').value,pt=document.getElementById('note-pt').value.trim(),vitals=document.getElementById('note-vitals').value.trim(),exam=document.getElementById('note-exam').value.trim(),ap=document.getElementById('note-ap').value.trim();
-    const noteTempl2=getActiveProfileData('note-template');
-    const acronymCtx=getAcronyms().map(a=>a.key+'='+a.val).join(', ');
-    text=await simple(`Clinical note-writing assistant. Professional, accurate, standard medical format. Generate A&P if not provided.${noteTempl2?' Use this as a style reference example: '+noteTempl2.substring(0,400):''}${acronymCtx?' Acronyms to expand: '+acronymCtx:''}`,`Write a ${noteType}:\n${pt?'Patient: '+pt+'\n':''}HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam/labs: '+exam:''}${ap?'\nA&P: '+ap:''}${cc}${pc}\n\nComplete note for attending review.`,'note-body','note-error','note-btn');
+    text=await simple(`Clinical note-writing assistant. Professional, accurate, standard medical format. Generate A&P if not provided.`,`Write a ${noteType}:\n${pt?'Patient: '+pt+'\n':''}HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam/labs: '+exam:''}${ap?'\nA&P: '+ap:''}${cc}${pc}\n\nComplete note for attending review.`,'note-body','note-error','note-btn');
   }
   if(text){lastNoteText=text;document.getElementById('test-btn').classList.add('visible');document.getElementById('ai-assist-bar').classList.add('visible');}
   btn.classList.remove('loading');btn.disabled=false;
@@ -1327,396 +1063,7 @@ async function generateQuestion(){
 }
 function renderQuestion(q){document.getElementById('question-text').textContent=q.question;const grid=document.getElementById('options-grid');grid.innerHTML='';['A','B','C','D','E'].forEach(l=>{if(!q.choices[l])return;const btn=document.createElement('button');btn.className='option-btn';btn.innerHTML=`<span class="option-letter">${l}</span><span>${q.choices[l]}</span>`;btn.onclick=()=>{const isCorrect=l===q.correct;if(isCorrect)scoreCorrect++;else scoreWrong++;document.getElementById('score-correct').textContent=scoreCorrect;document.getElementById('score-wrong').textContent=scoreWrong;document.querySelectorAll('.option-btn').forEach(b=>{b.disabled=true;const letter=b.querySelector('.option-letter').textContent;if(letter===q.correct)b.classList.add(isCorrect&&letter===l?'correct':'reveal-correct');if(letter===l&&!isCorrect)b.classList.add('wrong');});const exp=document.getElementById('explanation-box');exp.className='explanation-box'+(isCorrect?'':' wrong-exp')+' visible';exp.innerHTML=`<strong>${isCorrect?'Correct!':'Incorrect — correct answer: '+q.correct}</strong>`+(q.highYield?`<div class="exp-highlight${isCorrect?'':' wrong'}" style="margin-top:8px;">&#9889; ${escHtml(q.highYield)}</div>`:'')+`<div style="margin-top:8px;">${q.explanation}</div>`;document.getElementById('next-btn').classList.add('visible');};grid.appendChild(btn);});document.getElementById('explanation-box').className='explanation-box';document.getElementById('explanation-box').innerHTML='';document.getElementById('question-card').style.display='block';}
 
-
 function copyResponse(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.innerText).then(()=>{const parent=el.closest('.response-section');if(parent){const btn=parent.querySelector('.copy-btn');if(btn){btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}}});}
-
-// ── PDF Export ───────────────────────────────────────────────
-function exportPDF(bodyId, title) {
-  const el = document.getElementById(bodyId);
-  if (!el) return;
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
-  <style>
-    body { font-family: Georgia, serif; font-size: 13px; line-height: 1.8; color: #0d2e26; max-width: 720px; margin: 40px auto; padding: 0 24px; }
-    h1 { font-size: 16px; font-weight: 600; border-bottom: 2px solid #00a878; padding-bottom: 8px; margin-bottom: 20px; color: #008f65; }
-    strong { color: #008f65; }
-    .footer { margin-top: 40px; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 8px; }
-    @media print { .no-print { display: none; } }
-  </style></head><body>
-  <h1>${title}</h1>
-  <div>${el.innerHTML}</div>
-  <div class="footer">Generated by Chinwe — AI Clinical Assistant &nbsp;|&nbsp; ${new Date().toLocaleDateString()} &nbsp;|&nbsp; For educational use only. Not a clinical tool.</div>
-  <div class="no-print" style="margin-top:20px;">
-    <button onclick="window.print()" style="background:#00a878;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer;">Print / Save as PDF</button>
-  </div>
-  </body></html>`);
-  win.document.close();
-  setTimeout(() => win.focus(), 300);
-}
-
-// ── Findings mic ─────────────────────────────────────────────
-let findingsMicRec = null, findingsMicActive = false;
-function toggleFindingsMic() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert('Speech recognition not supported. Use Chrome.');return;
-  }
-  if (findingsMicActive) { stopFindingsMic(); return; }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  findingsMicRec = new SR();
-  findingsMicRec.continuous = true; findingsMicRec.interimResults = true; findingsMicRec.lang = 'en-US';
-  let final = '';
-  findingsMicRec.onresult = e => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    document.getElementById('present-findings-text').value = (final + interim).trim();
-  };
-  findingsMicRec.onerror = () => stopFindingsMic();
-  findingsMicRec.onend = () => { if (findingsMicActive) findingsMicRec.start(); };
-  findingsMicRec.start();
-  findingsMicActive = true;
-  const btn = document.getElementById('findings-mic-btn');
-  const lbl = document.getElementById('findings-mic-label');
-  btn.style.background = 'var(--red)'; btn.style.borderColor = 'var(--red)'; btn.style.color = '#fff';
-  btn.style.animation = 'micpulse 1s infinite';
-  lbl.textContent = 'stop';
-}
-function stopFindingsMic() {
-  if (findingsMicRec) { findingsMicRec.stop(); findingsMicRec = null; }
-  findingsMicActive = false;
-  const btn = document.getElementById('findings-mic-btn');
-  const lbl = document.getElementById('findings-mic-label');
-  if (btn) { btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = ''; btn.style.animation = ''; }
-  if (lbl) lbl.textContent = 'tap';
-}
-
-// ── Pertinent negatives ──────────────────────────────────────
-let negQuestions = [];
-async function fetchPertinentNegatives(patientSummary) {
-  try {
-    const data = await callAPI({ max_tokens: 500, messages: [{ role: 'user', content: `You are reviewing a patient summary before an oral presentation. Identify 4-6 pertinent negatives that a student should have explicitly asked about but may have omitted.
-
-Patient summary: "${patientSummary}"
-
-Return ONLY valid JSON:
-{"questions": [
-  {"q": "Did the patient endorse fever?", "key": "fever"},
-  {"q": "Any recent sick contacts?", "key": "sick_contacts"}
-]}
-
-Focus on ROS items and red flag symptoms directly relevant to the chief complaint. Max 6 questions.` }] });
-    const raw = data.content?.map(b => b.text || '').join('') || '';
-    const parsed = JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g, '').trim());
-    return parsed.questions || [];
-  } catch(e) { return []; }
-}
-
-function renderNegFollowup(questions) {
-  negQuestions = questions;
-  if (!questions.length) return;
-  const container = document.getElementById('neg-questions');
-  container.innerHTML = '';
-  questions.forEach((q, i) => {
-    const div = document.createElement('div');
-    div.style.cssText = 'background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;';
-    div.innerHTML = `<div style="font-size:12px;color:var(--text);font-weight:500;margin-bottom:7px;">${escHtml(q.q)}</div>
-      <div style="display:flex;gap:6px;">
-        <button class="neg-opt" data-i="${i}" data-val="Yes" onclick="selectNeg(this)" style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface);color:var(--muted2);font-family:var(--sans);transition:all 0.15s;">Yes</button>
-        <button class="neg-opt" data-i="${i}" data-val="No" onclick="selectNeg(this)" style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface);color:var(--muted2);font-family:var(--sans);transition:all 0.15s;">No</button>
-        <button class="neg-opt" data-i="${i}" data-val="Not asked" onclick="selectNeg(this)" style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface);color:var(--muted2);font-family:var(--sans);transition:all 0.15s;">Did not ask</button>
-      </div>`;
-    container.appendChild(div);
-  });
-  document.getElementById('neg-followup').style.display = 'block';
-}
-
-function selectNeg(btn) {
-  const i = btn.dataset.i;
-  document.querySelectorAll(`.neg-opt[data-i="${i}"]`).forEach(b => {
-    b.style.background = ''; b.style.borderColor = 'var(--border2)'; b.style.color = 'var(--muted2)';
-  });
-  btn.style.background = btn.dataset.val === 'Yes' ? 'var(--correct)' : btn.dataset.val === 'No' ? 'var(--purple)' : 'var(--amber)';
-  btn.style.borderColor = btn.style.background;
-  btn.style.color = '#fff';
-}
-
-function applyNegatives() {
-  const answers = [];
-  negQuestions.forEach((q, i) => {
-    const sel = document.querySelector(`.neg-opt[data-i="${i}"][style*="rgb"]`) ||
-                document.querySelector(`.neg-opt[data-i="${i}"]`);
-    const chosen = document.querySelector(`.neg-opt[data-i="${i}"][style*="var(--correct)"]`)?.dataset.val ||
-                   document.querySelector(`.neg-opt[data-i="${i}"][style*="var(--purple)"]`)?.dataset.val ||
-                   document.querySelector(`.neg-opt[data-i="${i}"][style*="var(--amber)"]`)?.dataset.val;
-    if (chosen && chosen !== 'Not asked') {
-      answers.push(`${q.q.replace('?','')} — ${chosen}`);
-    }
-  });
-  if (answers.length) {
-    const ta = document.getElementById('present-patient');
-    ta.value = ta.value.trim() + '\n\nPertinent negatives clarified: ' + answers.join('; ');
-  }
-  document.getElementById('neg-followup').style.display = 'none';
-}
-
-// ── Recent guidelines web search ─────────────────────────────
-async function runRecentGuidelines() {
-  const q = document.getElementById('guide-q').value.trim();
-  const specialty = document.getElementById('guide-specialty').value;
-  const btn = document.getElementById('recent-guide-btn');
-  const errorEl = document.getElementById('guide-error');
-  const bodyEl = document.getElementById('recent-guide-body');
-  const section = document.getElementById('recent-guide-response');
-  if (!q) { errorEl.textContent = 'Enter a clinical question first.'; return; }
-  btn.classList.add('loading'); btn.disabled = true; errorEl.textContent = '';
-  bodyEl.innerHTML = '<span style="color:var(--muted);font-size:13px;">Searching for recent guidelines...</span>';
-  section.classList.add('visible');
-  try {
-    const searchQuery = `${q}${specialty ? ' ' + specialty : ''} guidelines ${new Date().getFullYear()}`;
-    const data = await callAPI({
-      max_tokens: 1200,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: `Search for the most recent clinical guidelines and updates on: "${q}"${specialty ? ' from ' + specialty : ''}. Find publications from the last 1-2 years. Summarize the key recent updates, what changed, and cite the sources with publication dates and organizations. Format clearly with source names and years.` }]
-    });
-    const text = data.content?.map(b => b.type === 'text' ? b.text : '').filter(Boolean).join('') || 'No results found.';
-    bodyEl.innerHTML = fmt(text);
-  } catch(e) {
-    errorEl.textContent = 'Search error: ' + e.message;
-    bodyEl.innerHTML = '';
-    section.classList.remove('visible');
-  } finally {
-    btn.classList.remove('loading'); btn.disabled = false;
-  }
-}
-
-
-// ═══════════════════════════════════════════════════════════
-// BATCH 2: MANEUVERS + PROFILES + SETTINGS
-// ═══════════════════════════════════════════════════════════
-
-// ── Local profile system ─────────────────────────────────────
-const PROFILES_KEY = 'chinwe_profiles';
-const ACTIVE_KEY = 'chinwe_active_profile';
-
-function getProfiles() {
-  try { return JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]'); } catch { return []; }
-}
-function saveProfiles(profiles) {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-}
-function getActiveProfile() {
-  const id = localStorage.getItem(ACTIVE_KEY);
-  const profiles = getProfiles();
-  return profiles.find(p => p.id === id) || profiles[0] || null;
-}
-function getActiveProfileData(key) {
-  const p = getActiveProfile();
-  return p ? (p.data[key] || '') : '';
-}
-function saveProfileData(key, value) {
-  const id = localStorage.getItem(ACTIVE_KEY);
-  const profiles = getProfiles();
-  const p = profiles.find(p => p.id === id) || profiles[0];
-  if (!p) return;
-  p.data = p.data || {};
-  p.data[key] = value;
-  saveProfiles(profiles);
-}
-
-function initProfiles() {
-  let profiles = getProfiles();
-  if (profiles.length === 0) {
-    profiles = [{ id: 'default', name: 'My Profile', data: {}, created: Date.now() }];
-    saveProfiles(profiles);
-    localStorage.setItem(ACTIVE_KEY, 'default');
-  }
-  refreshTopbarProfile();
-}
-
-function refreshTopbarProfile() {
-  const p = getActiveProfile();
-  const chip = document.getElementById('topbar-profile-name');
-  if (chip && p) chip.textContent = '⚙ ' + p.name;
-  else if (chip) chip.textContent = '⚙ Settings';
-}
-
-function createProfile() {
-  const name = document.getElementById('new-profile-name').value.trim();
-  if (!name) return;
-  const profiles = getProfiles();
-  const id = 'profile_' + Date.now();
-  profiles.push({ id, name, data: {}, created: Date.now() });
-  saveProfiles(profiles);
-  localStorage.setItem(ACTIVE_KEY, id);
-  document.getElementById('new-profile-name').value = '';
-  renderProfileList();
-  refreshTopbarProfile();
-  loadSettingsIntoUI();
-}
-
-function switchProfile(id) {
-  localStorage.setItem(ACTIVE_KEY, id);
-  renderProfileList();
-  refreshTopbarProfile();
-  loadSettingsIntoUI();
-}
-
-function deleteProfile(id) {
-  let profiles = getProfiles();
-  if (profiles.length <= 1) return;
-  profiles = profiles.filter(p => p.id !== id);
-  saveProfiles(profiles);
-  if (localStorage.getItem(ACTIVE_KEY) === id) {
-    localStorage.setItem(ACTIVE_KEY, profiles[0].id);
-  }
-  renderProfileList();
-  refreshTopbarProfile();
-  loadSettingsIntoUI();
-}
-
-function renderProfileList() {
-  const container = document.getElementById('profile-list');
-  const profiles = getProfiles();
-  const activeId = getActiveProfile()?.id;
-  container.innerHTML = '';
-  profiles.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'profile-item' + (p.id === activeId ? ' active' : '');
-    div.innerHTML = `<div onclick="switchProfile('${p.id}')" style="flex:1;cursor:pointer;">
-      <div class="profile-item-name">${escHtml(p.name)}</div>
-      <div class="profile-item-sub">${Object.keys(p.data||{}).length} settings saved</div>
-    </div>
-    <button class="profile-delete" onclick="deleteProfile('${p.id}')" title="Delete">✕</button>`;
-    container.appendChild(div);
-  });
-}
-
-function loadSettingsIntoUI() {
-  const noteTemplate = getActiveProfileData('note-template');
-  const presStyle = getActiveProfileData('pres-style');
-  const verbosity = getActiveProfileData('verbosity') || 'standard';
-  const el1 = document.getElementById('note-template');
-  const el2 = document.getElementById('pres-style');
-  if (el1) el1.value = noteTemplate;
-  if (el2) el2.value = presStyle;
-  setVerbosity(verbosity, false);
-  renderAcronymList();
-}
-
-function saveSetting(key) {
-  const el = document.getElementById(key);
-  if (!el) return;
-  saveProfileData(key, el.value.trim());
-  const btn = el.nextElementSibling;
-  if (btn) { btn.textContent = 'Saved ✓'; setTimeout(() => btn.textContent = 'Save ' + (key === 'note-template' ? 'template' : 'style'), 1500); }
-}
-
-function setVerbosity(level, save = true) {
-  ['concise','standard','detailed'].forEach(l => {
-    const b = document.getElementById('verb-' + l);
-    if (b) b.classList.toggle('active', l === level);
-  });
-  if (save) saveProfileData('verbosity', level);
-}
-
-// ── Acronyms ─────────────────────────────────────────────────
-function getAcronyms() {
-  try { return JSON.parse(getActiveProfileData('acronyms') || '[]'); } catch { return []; }
-}
-function addAcronym() {
-  const key = document.getElementById('acronym-key').value.trim().toUpperCase();
-  const val = document.getElementById('acronym-val').value.trim();
-  if (!key || !val) return;
-  const acronyms = getAcronyms();
-  const existing = acronyms.findIndex(a => a.key === key);
-  if (existing >= 0) acronyms[existing].val = val;
-  else acronyms.push({ key, val });
-  saveProfileData('acronyms', JSON.stringify(acronyms));
-  document.getElementById('acronym-key').value = '';
-  document.getElementById('acronym-val').value = '';
-  renderAcronymList();
-}
-function deleteAcronym(key) {
-  const acronyms = getAcronyms().filter(a => a.key !== key);
-  saveProfileData('acronyms', JSON.stringify(acronyms));
-  renderAcronymList();
-}
-function renderAcronymList() {
-  const container = document.getElementById('acronym-list');
-  if (!container) return;
-  const acronyms = getAcronyms();
-  if (!acronyms.length) { container.innerHTML = '<div style="font-size:11px;color:var(--muted2);">No custom acronyms yet.</div>'; return; }
-  container.innerHTML = '';
-  acronyms.forEach(a => {
-    const row = document.createElement('div');
-    row.className = 'acronym-row';
-    row.innerHTML = `<span class="acronym-key">${escHtml(a.key)}</span><span class="acronym-val">→ ${escHtml(a.val)}</span><button class="acronym-del" onclick="deleteAcronym('${escHtml(a.key)}')">✕</button>`;
-    container.appendChild(row);
-  });
-}
-function expandAcronyms(text) {
-  const acronyms = getAcronyms();
-  if (!acronyms.length) return text;
-  acronyms.forEach(a => {
-    const re = new RegExp('\\b' + a.key + '\\b', 'gi');
-    text = text.replace(re, a.val);
-  });
-  return text;
-}
-
-// ── Settings panel open/close ─────────────────────────────────
-function openSettings() {
-  renderProfileList();
-  loadSettingsIntoUI();
-  document.getElementById('settings-overlay').classList.add('visible');
-}
-function closeSettings(e) {
-  if (!e || e.target === document.getElementById('settings-overlay')) {
-    document.getElementById('settings-overlay').classList.remove('visible');
-  }
-}
-
-// ── Physical exam maneuver modal ─────────────────────────────
-async function openManeuver(name) {
-  document.getElementById('maneuver-title').textContent = name;
-  document.getElementById('maneuver-body').innerHTML = '<div class="maneuver-loading">Loading description...</div>';
-  document.getElementById('maneuver-overlay').classList.add('visible');
-  try {
-    // Get description from Claude
-    const data = await callAPI({ max_tokens: 400, messages: [{ role: 'user', content: `Explain the "${name}" physical examination maneuver. Include: (1) What it tests, (2) How to perform it step by step, (3) What a positive result looks like and what it means. Be concise and clinically precise. Use bold headers for each section.` }] });
-    const desc = data.content?.map(b => b.text || '').join('') || '';
-
-    // Search for images via the backend web search
-    let imagesHtml = '';
-    try {
-      const imgData = await callAPI({ max_tokens: 200, tools: [{ type: 'web_search_20250305', name: 'web_search' }], messages: [{ role: 'user', content: `Find 2 clear clinical images showing how to perform the "${name}" physical examination maneuver. Return only image URLs as JSON array: ["url1","url2"]` }] });
-      const imgText = imgData.content?.map(b => b.type === 'text' ? b.text : '').filter(Boolean).join('');
-      const urls = JSON.parse(imgText.match(/\[.*?\]/s)?.[0] || '[]');
-      if (urls.length) {
-        imagesHtml = '<div class="maneuver-images">' + urls.slice(0,2).map(url =>
-          `<div class="maneuver-img-card"><img src="${url}" alt="${name}" onerror="this.closest('.maneuver-img-card').style.display='none'" /><div class="maneuver-img-caption">${name}</div></div>`
-        ).join('') + '</div>';
-      }
-    } catch(e) { /* images optional */ }
-
-    document.getElementById('maneuver-body').innerHTML =
-      `<div class="maneuver-desc">${fmt(desc)}</div>${imagesHtml}`;
-  } catch(e) {
-    document.getElementById('maneuver-body').innerHTML = `<div style="color:var(--red);font-size:12px;">Error: ${e.message}</div>`;
-  }
-}
-function closeManeuver() {
-  document.getElementById('maneuver-overlay').classList.remove('visible');
-}
-
-// ── Init ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  initProfiles();
-  // Wire settings init to updateSettingHint (already has DOMContentLoaded listener)
-});
-
 </script>
 </body>
 </html>
