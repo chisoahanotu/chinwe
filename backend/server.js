@@ -9,6 +9,17 @@ const PORT = process.env.PORT || 8080;
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(express.json({ limit: '20mb' }));
 
+const fs = require('fs');
+const path = require('path');
+const CURATED_PATH = path.join(__dirname, 'curated-images.json');
+
+function loadCurated() {
+  try { return JSON.parse(fs.readFileSync(CURATED_PATH, 'utf8')); } catch { return {}; }
+}
+function saveCurated(data) {
+  fs.writeFileSync(CURATED_PATH, JSON.stringify(data, null, 2));
+}
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.post('/api/chat', async (req, res) => {
@@ -188,6 +199,48 @@ app.post('/api/stanford-fetch', async (req, res) => {
     console.error('Stanford fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch Stanford page' });
   }
+});
+
+// ── Image curation API ──────────────────────────────────────────
+// GET curated images for a maneuver
+app.get('/api/curated-images/:maneuver', (req, res) => {
+  const curated = loadCurated();
+  const key = req.params.maneuver.toLowerCase().trim();
+  const entry = curated[key];
+  if (!entry) return res.json({ curated: false });
+  res.json({ curated: true, approved: entry.approved || [], rejected: entry.rejected || [] });
+});
+
+// POST approve/reject images for a maneuver
+// body: { maneuver: "Hawkins test", approved: ["url1","url2"], rejected: ["url3"] }
+app.post('/api/curated-images', (req, res) => {
+  const { maneuver, approved, rejected } = req.body;
+  if (!maneuver) return res.status(400).json({ error: 'maneuver required' });
+  const curated = loadCurated();
+  const key = maneuver.toLowerCase().trim();
+  curated[key] = {
+    maneuver,
+    approved: approved || [],
+    rejected: rejected || [],
+    updated_at: new Date().toISOString(),
+  };
+  saveCurated(curated);
+  res.json({ ok: true, maneuver: key });
+});
+
+// GET all curated maneuvers (admin overview)
+app.get('/api/curated-images', (req, res) => {
+  const curated = loadCurated();
+  res.json(curated);
+});
+
+// DELETE curation for a maneuver (reset to uncurated)
+app.delete('/api/curated-images/:maneuver', (req, res) => {
+  const curated = loadCurated();
+  const key = req.params.maneuver.toLowerCase().trim();
+  delete curated[key];
+  saveCurated(curated);
+  res.json({ ok: true, deleted: key });
 });
 
 app.listen(PORT, () => console.log(`Chinwe backend running on port ${PORT}`));

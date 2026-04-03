@@ -336,6 +336,8 @@ function openSettings(){
   var psEl=document.getElementById('pres-style');
   if(ntEl&&nt)ntEl.value=nt;
   if(psEl&&ps)psEl.value=ps;
+  var adm=document.getElementById('admin-toggle');
+  if(adm)adm.checked=localStorage.getItem('chinwe_admin')==='1';
 }
 function closeSettings(){
   var o=document.getElementById('settings-overlay');
@@ -1148,13 +1150,22 @@ Keep it concise and practical — written for a medical student about to perform
     body.innerHTML='<span style="color:var(--red);">Error loading: '+e.message+'</span>';
   }
 
-  // Render Stanford result — filter images to match this specific maneuver
+  // Check for curated images, then render Stanford
   if(stanfordPromise){
     try{
       const stanford=await stanfordPromise;
       if(stanford&&!stanford.error){
-        if(stanford.images&&stanford.images.length>1){
-          // Ask Claude to pick only images relevant to this specific test
+        // Check if admin has curated images for this maneuver
+        try{
+          const curatedResp=await fetch(API_BASE+'/api/curated-images/'+encodeURIComponent(name.toLowerCase().trim()));
+          const curatedData=await curatedResp.json();
+          if(curatedData.curated&&curatedData.approved&&curatedData.approved.length>0){
+            stanford._curatedApproved=curatedData.approved;
+          }
+        }catch(ce){/* no curated data, show all */}
+
+        // If not curated and admin isn't reviewing, still try Claude filter
+        if(!stanford._curatedApproved&&stanford.images&&stanford.images.length>1&&localStorage.getItem('chinwe_admin')!=='1'){
           try{
             const filterData=await callAPI({max_tokens:300,messages:[{role:'user',content:`I have images from a Stanford Medicine 25 page about a full exam. I need ONLY the images relevant to the "${name}" specifically.\n\nImage list:\n${stanford.images.map((img,i)=>`${i}: alt="${img.alt||'no alt'}" src="${img.src.split('/').pop()}"`).join('\n')}\n\nReturn ONLY a JSON array of index numbers for images that show or relate to the ${name} specifically. If unsure, include it. Example: [0,3,5]\nJSON array only, no other text.`}]});
             const filterRaw=filterData.content?.map(b=>b.text||'').join('')||'[]';
@@ -1164,6 +1175,7 @@ Keep it concise and practical — written for a medical student about to perform
             }
           }catch(fe){/* use all images as fallback */}
         }
+
         maneuverCache[name].stanford=stanford;
         renderStanford(stanford);
       }
@@ -1182,12 +1194,29 @@ function renderStanford(data){
   videoEl.innerHTML='';
   linkEl.innerHTML='';
 
-  // Images — use filtered if available, otherwise all
+  // Images — check for admin-curated images first
   const imgs=data.filteredImages||data.images||[];
-  if(imgs.length>0){
-    imgs.slice(0,6).forEach(img=>{
+  const maneuverName=document.getElementById('maneuver-title').textContent;
+  const isAdmin=localStorage.getItem('chinwe_admin')==='1';
+
+  if(data._curatedApproved){
+    // Show only pre-approved images
+    data._curatedApproved.forEach(src=>{
+      const imgEl=document.createElement('img');
+      imgEl.className='stanford-img';
+      imgEl.src=src;
+      imgEl.alt='Stanford Medicine 25';
+      imgEl.title='Click to enlarge';
+      imgEl.onclick=()=>window.open(src,'_blank');
+      imgEl.onerror=()=>imgEl.remove();
+      imagesEl.appendChild(imgEl);
+    });
+  }else if(imgs.length>0){
+    // Not yet curated — show all with approve/reject if admin
+    imgs.slice(0,10).forEach((img,idx)=>{
       const wrap=document.createElement('div');
       wrap.style.cssText='position:relative;display:inline-block;';
+      wrap.dataset.src=img.src;
       const imgEl=document.createElement('img');
       imgEl.className='stanford-img';
       imgEl.src=img.src;
@@ -1195,17 +1224,31 @@ function renderStanford(data){
       imgEl.title=img.alt||'Click to enlarge';
       imgEl.onclick=()=>window.open(img.src,'_blank');
       imgEl.onerror=()=>wrap.remove();
-      const dismiss=document.createElement('button');
-      dismiss.textContent='×';
-      dismiss.title='Remove image';
-      dismiss.style.cssText='position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(13,46,38,0.7);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;';
-      wrap.onmouseenter=()=>dismiss.style.opacity='1';
-      wrap.onmouseleave=()=>dismiss.style.opacity='0';
-      dismiss.onclick=(e)=>{e.stopPropagation();wrap.remove();};
       wrap.appendChild(imgEl);
-      wrap.appendChild(dismiss);
+      if(isAdmin){
+        const ctrl=document.createElement('div');
+        ctrl.style.cssText='display:flex;gap:2px;justify-content:center;margin-top:2px;';
+        const approve=document.createElement('button');
+        approve.textContent='✓';
+        approve.title='Approve';
+        approve.style.cssText='width:24px;height:20px;border-radius:4px;border:1px solid var(--green);background:rgba(22,163,74,0.1);color:var(--green);cursor:pointer;font-size:12px;';
+        approve.onclick=(e)=>{e.stopPropagation();wrap.dataset.status='approved';approve.style.background='var(--green)';approve.style.color='#fff';reject.style.background='rgba(229,57,53,0.1)';reject.style.color='var(--red)';};
+        const reject=document.createElement('button');
+        reject.textContent='×';
+        reject.title='Reject';
+        reject.style.cssText='width:24px;height:20px;border-radius:4px;border:1px solid var(--red);background:rgba(229,57,53,0.1);color:var(--red);cursor:pointer;font-size:12px;';
+        reject.onclick=(e)=>{e.stopPropagation();wrap.dataset.status='rejected';reject.style.background='var(--red)';reject.style.color='#fff';approve.style.background='rgba(22,163,74,0.1)';approve.style.color='var(--green)';imgEl.style.opacity='0.3';};
+        ctrl.appendChild(approve);ctrl.appendChild(reject);
+        wrap.appendChild(ctrl);
+      }
       imagesEl.appendChild(wrap);
     });
+    if(isAdmin){
+      const saveRow=document.createElement('div');
+      saveRow.style.cssText='width:100%;margin-top:8px;';
+      saveRow.innerHTML='<button onclick="saveCuratedImages()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);">Save image selections</button>';
+      imagesEl.appendChild(saveRow);
+    }
   }
 
   // YouTube video
@@ -1231,6 +1274,29 @@ function renderStanford(data){
 
 function closeManeuver(){
   document.getElementById('maneuver-overlay').classList.remove('visible');
+}
+
+async function saveCuratedImages(){
+  const maneuver=document.getElementById('maneuver-title').textContent;
+  const wraps=document.querySelectorAll('#stanford-images [data-src]');
+  const approved=[],rejected=[];
+  wraps.forEach(w=>{
+    if(w.dataset.status==='approved') approved.push(w.dataset.src);
+    else if(w.dataset.status==='rejected') rejected.push(w.dataset.src);
+  });
+  if(approved.length===0&&rejected.length===0){alert('Mark at least one image as approved (✓) or rejected (×).');return;}
+  try{
+    await fetch(API_BASE+'/api/curated-images',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({maneuver,approved,rejected}),
+    });
+    // Update cache
+    if(maneuverCache[maneuver]&&maneuverCache[maneuver].stanford){
+      maneuverCache[maneuver].stanford._curatedApproved=approved;
+    }
+    alert('Saved! Students will only see approved images for '+maneuver+'.');
+  }catch(e){alert('Error saving: '+e.message);}
 }
 function copyHx(){const sections=document.querySelectorAll('.hx-section');let text='';sections.forEach(s=>{const title=s.querySelector('.hx-section-title')?.textContent||'';text+=title+'\n';s.querySelectorAll('.hx-item-main').forEach(i=>text+='  - '+i.innerText.replace('HIGH YIELD','[HY]')+'\n');text+='\n';});navigator.clipboard.writeText(text.trim()).then(()=>{const btn=document.getElementById('hx-copy-btn');btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);});}
 
@@ -1534,6 +1600,14 @@ function copyResponse(id){const el=document.getElementById(id);if(!el)return;nav
 <div style="font-size:11px;color:#6b9e90;margin-bottom:8px;">Attending-specific format preferences for presentations and grading.</div>
 <textarea id="pres-style" placeholder="e.g. Always one-liner first. Keep HPI under 60 seconds. End with assessment before plan..." style="width:100%;height:80px;padding:10px;border:1.5px solid rgba(0,160,120,0.3);border-radius:7px;font-size:12px;outline:none;resize:vertical;font-family:sans-serif;"></textarea>
 <button id="save-pres-btn" onclick="saveSetting('pres-style','save-pres-btn','Save style')" style="margin-top:6px;background:#00a878;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;">Save style</button>
+</div>
+<div style="margin-bottom:24px;">
+<div style="font-family:monospace;font-size:10px;text-transform:uppercase;color:#00a878;margin-bottom:8px;">Admin Mode</div>
+<div style="font-size:11px;color:#6b9e90;margin-bottom:8px;">Enable to curate which Stanford images appear for each maneuver.</div>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+<input type="checkbox" id="admin-toggle" onchange="localStorage.setItem('chinwe_admin',this.checked?'1':'0')" style="width:16px;height:16px;accent-color:#00a878;" />
+<span style="font-size:12px;color:#0d2e26;">Image curation mode</span>
+</label>
 </div>
 </div>
 </div>
