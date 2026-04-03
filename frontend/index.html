@@ -963,8 +963,9 @@ Return ONLY valid JSON, no other text, no markdown fences. Structure:
 ]}
 
 Rules:
-- Each item: "text" (shorthand), "highYield" (bool), "rationale" (1 sentence plain ASCII), "maneuvers" (array of strings)
-- "maneuvers": list any named clinical tests, signs, or maneuvers mentioned in the text OR rationale (e.g. ["Hawkins test","Neer test"]). Include exam maneuvers, named signs, specific scales/scores. Empty array if none.
+- Each item: "text" (shorthand), "highYield" (bool), "rationale" (1 sentence plain ASCII — MUST be detailed and mention specific test names by name), "maneuvers" (array of strings)
+- "rationale" MUST name specific clinical tests, signs, scores, and maneuvers when relevant. For Physical Exam items, ALWAYS name the exact tests to perform (e.g. "Hawkins and Neer tests assess subacromial impingement; Empty Can test isolates supraspinatus"). Never be vague — name the tests.
+- "maneuvers": duplicate list of any named clinical tests, signs, or maneuvers that appear in "text" or "rationale" (e.g. ["Hawkins test","Neer test","Empty Can test"]). This is an index for tagging — the names MUST also appear in the rationale text itself. Empty array only if genuinely no named tests apply.
 - 3-4 items per section max, 1-2 highYield per section
 - Attending Pearls: full sentences, teaching points not patient questions
 - If chart context provided, tailor items to this specific patient`;
