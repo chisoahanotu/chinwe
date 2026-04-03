@@ -257,6 +257,31 @@
   .topic-chip { background: rgba(180,83,9,0.08); border: 1px solid rgba(180,83,9,0.2); color: #92400e; border-radius: 20px; padding: 4px 12px; font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); font-weight: 500; }
   .topic-chip:hover { background: rgba(180,83,9,0.15); border-color: #b45309; }
   .topic-chip.active { background: #b45309; color: #fff; border-color: #b45309; }
+  .input-toolbar-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .input-toolbar-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .input-toolbar-btn.recording {
+    background: rgba(229,57,53,0.1);
+    border-color: var(--red);
+    animation: micpulse 1s infinite;
+  }
+  .input-thumbs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 </style>
 </head>
 <body>
@@ -399,15 +424,14 @@ function renderAcronymList(){
       <div class="field" style="margin-bottom:14px;">
         <label>Chart context (optional) — PMH, problem list, meds from EMR</label>
         <textarea id="hx-chart" placeholder="e.g. PMH: HTN, DM2, HFrEF EF 35%. Meds: metoprolol, lisinopril. Here for f/u after admission..." style="min-height:60px;"></textarea>
-      </div>
-      <div class="divider-text" style="margin-top:12px;">📷 Photo input (optional)</div>
-      <div style="margin-bottom:10px;">
-        <div class="supp-sub" style="font-size:11px;color:var(--muted);margin-bottom:8px;">Upload or snap photos of written notes, whiteboards, or charts</div>
-        <div class="photo-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
-          <label class="photo-action-btn" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1.5px solid var(--border2);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted2);">📷 Take photo<input type="file" id="hx-camera-input" accept="image/*" capture="environment" multiple onchange="addHxPhotos(event)" style="display:none;" /></label>
-          <label class="photo-action-btn" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1.5px solid var(--border2);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted2);">🖼 Upload photos<input type="file" id="hx-upload-input" accept="image/*" multiple onchange="addHxPhotos(event)" style="display:none;" /></label>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+          <div class="input-thumbs" id="thumbs-hx-chart"></div>
+          <div style="margin-left:auto;display:flex;gap:4px;">
+            <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('hx-chart')" title="Take photo">📷</button>
+            <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('hx-chart')" title="Upload photo">🖼</button>
+            <button type="button" class="input-toolbar-btn" id="mic-hx-chart" onclick="toggleFieldMic('hx-chart', this)" title="Dictate">🎙</button>
+          </div>
         </div>
-        <div class="photo-thumbs" id="hx-photo-thumbs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
       </div>
       <button class="run-btn" id="hx-btn" onclick="runHx()" style="margin-top:0;"><div class="spinner"></div><span class="btn-text">Coach Me ↗</span></button>
       <div class="divider-text" style="margin-top:12px;">Quick fill</div>
@@ -480,33 +504,16 @@ function renderAcronymList(){
           <strong>From H&amp;X:</strong> <span id="present-context-text"></span>
           <button onclick="clearPresentContext()" style="margin-left:8px;font-size:11px;color:var(--muted2);background:none;border:none;cursor:pointer;text-decoration:underline;">clear</button>
         </div>
-        <div class="present-intake-toggle">
-          <button class="intake-btn active" id="intake-btn-type" onclick="setIntakeMode('type')">✎ Type findings</button>
-          <button class="intake-btn" id="intake-btn-photo" onclick="setIntakeMode('photo')">📷 Upload notes</button>
-        </div>
-
-        <!-- Type findings -->
-        <div id="intake-type">
-          <div class="field" style="margin-bottom:10px;">
-            <label>Patient info & findings from your encounter</label>
-            <textarea id="present-findings-text" placeholder="e.g. 68F, PMH HTN DM2. CC chest pain x2 days. Vitals: BP 158/92, HR 88, afebrile, O2 98%. Exam: no JVD, lungs clear, no peripheral edema. EKG normal sinus. Troponin x2 negative. CXR clear. Attending suspects MSK..." style="min-height:100px;"></textarea>
-          </div>
-        </div>
-
-        <!-- Photo findings -->
-        <div id="intake-photo" style="display:none;">
-          <div class="supp-label" style="margin-bottom:4px;">📷 Photos of your written notes</div>
-          <div class="supp-sub" style="margin-bottom:8px;">Snap your encounter notes, scribbles, or printed vitals — add multiple pages</div>
-          <div class="photo-actions">
-            <label class="photo-action-btn">📷 Take photo<input type="file" id="pnotes-camera" accept="image/*" capture="environment" multiple onchange="addPresentPhotos(event)" /></label>
-            <label class="photo-action-btn">🖼 Upload photos<input type="file" id="pnotes-upload" accept="image/*" multiple onchange="addPresentPhotos(event)" /></label>
-          </div>
-          <div class="paste-zone" id="pnotes-paste-zone">📋 Paste image here (Ctrl+V / ⌘V)</div>
-          <div class="photo-thumbs" id="pnotes-thumbs"></div>
-          <div class="photo-empty" id="pnotes-empty" style="display:none;">No photos added yet</div>
-          <div class="field" style="margin-top:10px;">
-            <label>Additional typed notes (optional)</label>
-            <textarea id="present-findings-supp" placeholder="Any extra context not in the photos..." style="min-height:50px;background:var(--surface2);border:1.5px solid var(--border2);border-radius:7px;padding:9px 11px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none;resize:vertical;width:100%;line-height:1.6;"></textarea>
+        <div class="field" style="margin-bottom:10px;">
+          <label>Patient info & findings from your encounter</label>
+          <textarea id="present-findings-text" placeholder="e.g. 68F, PMH HTN DM2. CC chest pain x2 days. Vitals: BP 158/92, HR 88, afebrile, O2 98%. Exam: no JVD, lungs clear, no peripheral edema. EKG normal sinus. Troponin x2 negative. CXR clear. Attending suspects MSK..." style="min-height:100px;"></textarea>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <div class="input-thumbs" id="thumbs-present-findings-text"></div>
+            <div style="margin-left:auto;display:flex;gap:4px;">
+              <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('present-findings-text')" title="Take photo">📷</button>
+              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('present-findings-text')" title="Upload photo">🖼</button>
+              <button type="button" class="input-toolbar-btn" id="mic-present-findings-text" onclick="toggleFieldMic('present-findings-text', this)" title="Dictate">🎙</button>
+            </div>
           </div>
         </div>
 
@@ -616,43 +623,33 @@ function renderAcronymList(){
         <strong>Context from presentation:</strong> <span id="note-context-text"></span>
         <button onclick="clearNoteContext()" style="margin-left:8px;font-size:11px;color:var(--muted2);background:none;border:none;cursor:pointer;text-decoration:underline;">clear</button>
       </div>
-      <div class="mode-toggle">
-        <button class="mode-btn active" id="mode-type" onclick="setMode('type')">✎ Type notes</button>
-        <button class="mode-btn" id="mode-photo" onclick="setMode('photo')">📷 Photo + notes</button>
-      </div>
-      <div id="typed-inputs">
+      <div>
         <div class="field-row">
           <div class="field"><label>Note type</label><select id="note-type"><option>SOAP note</option><option>Full H&P</option><option>Admission note</option><option>Progress note</option><option>Discharge summary</option><option>Procedure note</option><option>Pre-op note</option></select></div>
           <div class="field"><label>Patient (age/sex/setting)</label><input type="text" id="note-pt" placeholder="e.g. 55M, outpatient clinic" /></div>
         </div>
-        <div class="field" style="margin-bottom:10px;"><label>Chief complaint & HPI</label><textarea id="note-hpi" placeholder="e.g. 45F here for f/u HTN. BP running 150s at home..."></textarea></div>
+        <div class="field" style="margin-bottom:10px;"><label>Chief complaint & HPI</label><textarea id="note-hpi" placeholder="e.g. 45F here for f/u HTN. BP running 150s at home..."></textarea>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <div class="input-thumbs" id="thumbs-note-hpi"></div>
+            <div style="margin-left:auto;display:flex;gap:4px;">
+              <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('note-hpi')" title="Take photo">📷</button>
+              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('note-hpi')" title="Upload photo">🖼</button>
+              <button type="button" class="input-toolbar-btn" id="mic-note-hpi" onclick="toggleFieldMic('note-hpi', this)" title="Dictate">🎙</button>
+            </div>
+          </div>
+        </div>
         <div class="field-row">
           <div class="field"><label>Vitals</label><input type="text" id="note-vitals" placeholder="e.g. T 37.0, HR 76, BP 152/88, RR 14, O2 99% RA" /></div>
           <div class="field"><label>Key exam & labs</label><input type="text" id="note-exam" placeholder="e.g. no papilledema, no edema; BMP wnl" /></div>
         </div>
-        <div class="field" style="margin-top:10px;"><label>Assessment & plan (optional)</label><textarea id="note-ap" placeholder="Leave blank to auto-generate..."></textarea></div>
-      </div>
-      <div id="photo-inputs" style="display:none;">
-        <div class="field-row" style="margin-bottom:12px;">
-          <div class="field"><label>Note type</label><select id="note-type-photo"><option>SOAP note</option><option>Full H&P</option><option>Admission note</option><option>Progress note</option><option>Discharge summary</option><option>Procedure note</option><option>Pre-op note</option></select></div>
-          <div class="field"><label>Setting / context (optional)</label><input type="text" id="note-extra" placeholder="e.g. outpatient cardiology, 3rd year student" /></div>
-        </div>
-        <div class="photo-grid">
-          <div class="photo-col">
-            <div class="supp-label">📷 Photos of written notes</div>
-            <div class="supp-sub">Add multiple pages — snap or upload from camera roll</div>
-            <div class="photo-actions">
-              <label class="photo-action-btn">📷 Take photo<input type="file" id="photo-camera-input" accept="image/*" capture="environment" multiple onchange="addPhotos(event)" /></label>
-              <label class="photo-action-btn">🖼 Upload photos<input type="file" id="photo-upload-input" accept="image/*" multiple onchange="addPhotos(event)" /></label>
+        <div class="field" style="margin-top:10px;"><label>Assessment & plan (optional)</label><textarea id="note-ap" placeholder="Leave blank to auto-generate..."></textarea>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            <div class="input-thumbs" id="thumbs-note-ap"></div>
+            <div style="margin-left:auto;display:flex;gap:4px;">
+              <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('note-ap')" title="Take photo">📷</button>
+              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('note-ap')" title="Upload photo">🖼</button>
+              <button type="button" class="input-toolbar-btn" id="mic-note-ap" onclick="toggleFieldMic('note-ap', this)" title="Dictate">🎙</button>
             </div>
-            <div class="paste-zone" id="paste-zone">📋 Paste image here (Ctrl+V / ⌘V)</div>
-            <div class="photo-thumbs" id="photo-thumbs"></div>
-            <div class="photo-empty" id="photo-empty">No photos added yet</div>
-          </div>
-          <div class="photo-col">
-            <div class="supp-label">✎ Additional notes</div>
-            <div class="supp-sub">Verbal history, recalled details, anything not written down</div>
-            <textarea class="supp-textarea" id="note-supp" placeholder="e.g. patient skipping meds, lives alone, attending wants to add amlodipine..."></textarea>
           </div>
         </div>
       </div>
@@ -783,12 +780,12 @@ function renderAcronymList(){
 </div>
 <script>
 const API_BASE=window.location.hostname==='localhost'?'http://localhost:3001':'https://chinwe-production.up.railway.app';
-let currentMode='type',photoFiles=[],hxPhotoFiles=[],selectedTopics=[],scoreCorrect=0,scoreWrong=0,lastNoteText='',pendingNoteParams=null,presentMode='teach',presentSummary='';
+let currentMode='type',photoFiles=[],selectedTopics=[],scoreCorrect=0,scoreWrong=0,lastNoteText='',pendingNoteParams=null,presentMode='teach',presentSummary='';
 
 function switchTab(n){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+n).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
-function setMode(m){currentMode=m;document.getElementById('mode-type').classList.toggle('active',m==='type');document.getElementById('mode-photo').classList.toggle('active',m==='photo');document.getElementById('typed-inputs').style.display=m==='type'?'block':'none';document.getElementById('photo-inputs').style.display=m==='photo'?'block':'none';}
+function setMode(m){/* no-op: unified input mode */}
 // ── Present path / intake ────────────────────────────────────
-let presentPath='real', intakeMode='type';
+let presentPath='real';
 let presentPhotoFiles=[];
 
 const SETTING_META={
@@ -822,13 +819,7 @@ function setPresentPath(p){
   document.getElementById('present-path-practice').style.display=p==='practice'?'block':'none';
   document.getElementById('present-mode-section').style.display='none';
 }
-function setIntakeMode(m){
-  intakeMode=m;
-  document.getElementById('intake-btn-type').classList.toggle('active',m==='type');
-  document.getElementById('intake-btn-photo').classList.toggle('active',m==='photo');
-  document.getElementById('intake-type').style.display=m==='type'?'block':'none';
-  document.getElementById('intake-photo').style.display=m==='photo'?'block':'none';
-}
+function setIntakeMode(m){/* no-op: unified input mode */}
 function setPresentMode(m){
   presentMode=m;
   ['teach','generate','critique'].forEach(mode=>{
@@ -844,20 +835,7 @@ document.addEventListener('DOMContentLoaded',function(){
   if(sel)sel.addEventListener('change',updateSettingHint);
 });
 
-// Photo handling for present notes
-function addPresentPhotos(e){Array.from(e.target.files).forEach(f=>{const mime=f.type||'image/jpeg';const reader=new FileReader();reader.onload=ev=>{const b64=ev.target.result.split(',')[1];const objUrl=URL.createObjectURL(f);presentPhotoFiles.push({base64:b64,mimeType:mime,objectUrl:objUrl});renderPresentThumbs();};reader.readAsDataURL(f);});e.target.value='';}
-function renderPresentThumbs(){
-  const container=document.getElementById('pnotes-thumbs'),empty=document.getElementById('pnotes-empty');
-  container.innerHTML='';
-  if(presentPhotoFiles.length===0){empty.style.display='block';return;}
-  empty.style.display='none';
-  presentPhotoFiles.forEach((p,i)=>{const wrap=document.createElement('div');wrap.className='photo-thumb';const img=document.createElement('img');img.src=p.objectUrl;img.alt='note '+(i+1);const rm=document.createElement('button');rm.className='photo-thumb-remove';rm.textContent='×';rm.onclick=()=>{URL.revokeObjectURL(presentPhotoFiles[i].objectUrl);presentPhotoFiles.splice(i,1);renderPresentThumbs();};wrap.appendChild(img);wrap.appendChild(rm);container.appendChild(wrap);});
-}
-// Paste into present photo zone
-document.addEventListener('paste',function(e){
-  if(presentPath!=='real'||intakeMode!=='photo')return;
-  const items=e.clipboardData?.items||[];for(const item of items){if(item.type.startsWith('image/')){const blob=item.getAsFile();if(blob){const mime=blob.type||'image/png';const reader=new FileReader();reader.onload=ev=>{const b64=ev.target.result.split(',')[1];const objUrl=URL.createObjectURL(blob);presentPhotoFiles.push({base64:b64,mimeType:mime,objectUrl:objUrl});renderPresentThumbs();};reader.readAsDataURL(blob);const z=document.getElementById('pnotes-paste-zone');if(z){z.classList.add('drag-over');setTimeout(()=>z.classList.remove('drag-over'),600);}}}}
-});
+/* Present photo functions removed — photos now go through generic photoToText() */
 
 // Extract findings from real patient notes
 async function extractFindings(){
@@ -865,17 +843,9 @@ async function extractFindings(){
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
   try{
     let messages;
-    if(intakeMode==='photo'){
-      if(presentPhotoFiles.length===0){errorEl.textContent='Add at least one photo first.';btn.classList.remove('loading');btn.disabled=false;return;}
-      const content=presentPhotoFiles.map(p=>({type:'image',source:{type:'base64',media_type:p.mimeType,data:p.base64}}));
-      const supp=document.getElementById('present-findings-supp').value.trim();
-      content.push({type:'text',text:`These are a medical student's encounter notes. Extract and organize all the clinical information into a concise patient summary suitable for an oral presentation.${supp?'\\n\\nAdditional notes: '+supp:''}\\n\\nReturn a clean paragraph or two: patient demographics, chief complaint, key history, vitals, exam findings, labs/imaging, and any working diagnosis if mentioned. If something is illegible write [illegible].`});
-      messages=[{role:'user',content}];
-    }else{
-      const text=document.getElementById('present-findings-text').value.trim();
-      if(!text){errorEl.textContent='Enter your findings first.';btn.classList.remove('loading');btn.disabled=false;return;}
-      messages=[{role:'user',content:`Organize these clinical encounter notes into a clean patient summary for oral presentation:\\n\\n${text}\\n\\nReturn a concise 1-2 paragraph summary: patient demographics, chief complaint, history, vitals, exam, labs/imaging, working diagnosis. Keep all clinical details.`}];
-    }
+    const text=document.getElementById('present-findings-text').value.trim();
+    if(!text){errorEl.textContent='Enter your findings first.';btn.classList.remove('loading');btn.disabled=false;return;}
+    messages=[{role:'user',content:`Organize these clinical encounter notes into a clean patient summary for oral presentation:\\n\\n${text}\\n\\nReturn a concise 1-2 paragraph summary: patient demographics, chief complaint, history, vitals, exam, labs/imaging, working diagnosis. Keep all clinical details.`}];
     const data=await callAPI({max_tokens:600,messages});
     const summary=data.content?.map(b=>b.text||'').join('')||'';
     document.getElementById('present-patient').value=summary;
@@ -917,16 +887,9 @@ function sendToPresent(){
 function clearPresentContext(){document.getElementById('present-context-bar').style.display='none';}
 function sendToNote(){presentSummary=document.getElementById('present-gen-body').innerText||'';const snippet=presentSummary.substring(0,80)+(presentSummary.length>80?'...':'');document.getElementById('note-context-text').textContent=snippet;document.getElementById('note-context-bar').style.display='block';if(presentSummary)document.getElementById('note-hpi').value=presentSummary.substring(0,500);switchTab('note');}
 function clearNoteContext(){presentSummary='';document.getElementById('note-context-bar').style.display='none';}
-function addHxPhotos(e){Array.from(e.target.files).forEach(f=>{const mime=f.type||'image/jpeg';const reader=new FileReader();reader.onload=ev=>{const b64=ev.target.result.split(',')[1];const objUrl=URL.createObjectURL(f);hxPhotoFiles.push({base64:b64,mimeType:mime,objectUrl:objUrl});renderHxThumbs();};reader.readAsDataURL(f);});e.target.value='';}
-function removeHxPhoto(idx){URL.revokeObjectURL(hxPhotoFiles[idx].objectUrl);hxPhotoFiles.splice(idx,1);renderHxThumbs();}
-function renderHxThumbs(){const c=document.getElementById('hx-photo-thumbs');c.innerHTML='';hxPhotoFiles.forEach((p,i)=>{c.innerHTML+=`<div style="position:relative;display:inline-block;"><img src="${p.objectUrl}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1.5px solid var(--border2);" /><button onclick="removeHxPhoto(${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button></div>`;});}
+/* addHxPhotos, removeHxPhoto, renderHxThumbs removed — photos now go through generic photoToText() */
 
-function addPhotos(e){Array.from(e.target.files).forEach(f=>{const mime=f.type||'image/jpeg';const reader=new FileReader();reader.onload=ev=>{const b64=ev.target.result.split(',')[1];const objUrl=URL.createObjectURL(f);photoFiles.push({base64:b64,mimeType:mime,objectUrl:objUrl});renderThumbs();};reader.readAsDataURL(f);});e.target.value='';}
-function removePhoto(idx){URL.revokeObjectURL(photoFiles[idx].objectUrl);photoFiles.splice(idx,1);renderThumbs();}
-function renderThumbs(){const container=document.getElementById('photo-thumbs');const empty=document.getElementById('photo-empty');container.innerHTML='';if(photoFiles.length===0){empty.classList.add('visible');return;}empty.classList.remove('visible');photoFiles.forEach((p,i)=>{const wrap=document.createElement('div');wrap.className='photo-thumb';const img=document.createElement('img');img.src=p.objectUrl;img.alt='note '+(i+1);const rm=document.createElement('button');rm.className='photo-thumb-remove';rm.textContent='×';rm.onclick=()=>removePhoto(i);wrap.appendChild(img);wrap.appendChild(rm);container.appendChild(wrap);});}
-function addImageBlob(blob){const mime=blob.type||'image/png';const reader=new FileReader();reader.onload=ev=>{const b64=ev.target.result.split(',')[1];const objUrl=URL.createObjectURL(blob);photoFiles.push({base64:b64,mimeType:mime,objectUrl:objUrl});renderThumbs();};reader.readAsDataURL(blob);}
-document.addEventListener('paste',function(e){if(currentMode!=='photo')return;const items=e.clipboardData?.items||[];for(const item of items){if(item.type.startsWith('image/')){const blob=item.getAsFile();if(blob){addImageBlob(blob);const z=document.getElementById('paste-zone');if(z){z.classList.add('drag-over');setTimeout(()=>z.classList.remove('drag-over'),600);}}}}});
-document.addEventListener('DOMContentLoaded',function(){const zone=document.getElementById('paste-zone');if(!zone)return;zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(f=>{const reader=new FileReader();reader.onload=ev=>{const b64=ev.target.result.split(',')[1];const objUrl=URL.createObjectURL(f);photoFiles.push({base64:b64,mimeType:f.type,objectUrl:objUrl});renderThumbs();};reader.readAsDataURL(f);});});});
+/* Old note photo functions (addPhotos, removePhoto, renderThumbs, addImageBlob, paste/drop handlers) removed — photos now go through generic photoToText() */
 
 function fillHx(cc){document.getElementById('hx-cc').value=cc;}
 function toggleTopic(el,topic){el.classList.toggle('active');selectedTopics=el.classList.contains('active')?[...selectedTopics,topic]:selectedTopics.filter(t=>t!==topic);}
@@ -982,11 +945,9 @@ Rules:
 - 3-4 items per section max, 1-2 highYield per section
 - Attending Pearls: full sentences, teaching points not patient questions
 - If chart context provided, tailor items to this specific patient
-- If photos are provided, extract any relevant clinical information from them and incorporate into your coaching`;
-  const msgContent=[];
-  if(hxPhotoFiles.length>0){hxPhotoFiles.forEach(p=>{msgContent.push({type:'image',source:{type:'base64',media_type:p.mimeType,data:p.base64}});});msgContent.push({type:'text',text:prompt});}
+- If chart context is provided, tailor items to this specific patient`;
   try{
-    const data=await callAPI({max_tokens:6000,messages:[{role:'user',content:hxPhotoFiles.length>0?msgContent:prompt}]});
+    const data=await callAPI({max_tokens:6000,messages:[{role:'user',content:prompt}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';
     let parsed;try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}catch(jsonErr){const match=raw.match(/\{[\s\S]*\}/);if(match){parsed=JSON.parse(match[0]);}else{throw jsonErr;}}
     renderHxOutput(parsed);
@@ -1116,11 +1077,10 @@ function runGuide(){const q=document.getElementById('guide-q').value.trim();if(!
 async function runNote(){
   const errorEl=document.getElementById('note-error');errorEl.textContent='';
   document.getElementById('inline-study').classList.remove('visible');document.getElementById('test-btn').classList.remove('visible');document.getElementById('ai-assist-bar').classList.remove('visible');document.getElementById('ai-assist-result').classList.remove('visible');document.getElementById('ai-assist-result').innerHTML='';
-  if(currentMode==='photo'){if(photoFiles.length===0){errorEl.textContent='Add at least one photo first.';return;}pendingNoteParams={mode:'photo'};}
-  else{const hpi=document.getElementById('note-hpi').value.trim();if(!hpi){errorEl.textContent='HPI required.';return;}pendingNoteParams={mode:'type'};}
+  const hpi=document.getElementById('note-hpi').value.trim();if(!hpi){errorEl.textContent='HPI required.';return;}pendingNoteParams={mode:'type'};
   const btn=document.getElementById('note-btn');btn.classList.add('loading');btn.disabled=true;
   try{
-    let sc='';if(currentMode==='type'){const hpi=document.getElementById('note-hpi').value.trim(),vitals=document.getElementById('note-vitals').value.trim(),exam=document.getElementById('note-exam').value.trim(),ap=document.getElementById('note-ap').value.trim();sc=`HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam: '+exam:''}${ap?'\nA&P: '+ap:''}`;}else{sc=document.getElementById('note-supp').value.trim()||'(photo notes provided)';}
+    let sc='';{const hpi=document.getElementById('note-hpi').value.trim(),vitals=document.getElementById('note-vitals').value.trim(),exam=document.getElementById('note-exam').value.trim(),ap=document.getElementById('note-ap').value.trim();sc=`HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam: '+exam:''}${ap?'\nA&P: '+ap:''}`;}
     const data=await callAPI({messages:[{role:'user',content:`Review this medical student note. Identify 2-3 questions that would meaningfully improve it.\n\nNote:\n${sc}\n\nReturn ONLY JSON: {"questions":[{"text":"...","type":"options","options":["...","..."]}]}\nTypes: options or text. Max 3. If comprehensive, return {"questions":[]}`}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';const parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());
     if(!parsed.questions||parsed.questions.length===0){await generateNote({});}else{showClarifyModal(parsed.questions);}
@@ -1137,12 +1097,7 @@ async function generateNote(clarifyAnswers){
   const cc=Object.keys(clarifyAnswers).length>0?'\n\nAdditional clarifications:\n'+Object.entries(clarifyAnswers).map(([k,v])=>`- ${k}: ${v}`).join('\n'):'';
   const pc=presentSummary?'\n\nPresentation context:\n'+presentSummary.substring(0,400):'';
   let text=null;
-  if(currentMode==='photo'){
-    const noteType=document.getElementById('note-type-photo').value,extra=document.getElementById('note-extra').value.trim(),supp=document.getElementById('note-supp').value.trim();
-    const content=photoFiles.map(p=>({type:'image',source:{type:'base64',media_type:p.mimeType,data:p.base64}}));
-    content.push({type:'text',text:`Medical student handwritten notes (${photoFiles.length} page${photoFiles.length>1?'s':''}). Read all pages carefully.\n\nGenerate a complete professional ${noteType}. Standard headers. Full problem-based A&P.${extra?'\nContext: '+extra:''}${supp?'\n\nAdditional info:\n'+supp:''}${cc}${pc}\n\nIf illegible: [not legible]. If missing: [not documented].`});
-    text=await callClaude(`Clinical note-writing assistant for medical students. Convert raw notes into polished professional clinical documentation.`,[{role:'user',content}],'note-body','note-error','note-btn');
-  }else{
+  {
     const hpi=document.getElementById('note-hpi').value.trim(),noteType=document.getElementById('note-type').value,pt=document.getElementById('note-pt').value.trim(),vitals=document.getElementById('note-vitals').value.trim(),exam=document.getElementById('note-exam').value.trim(),ap=document.getElementById('note-ap').value.trim();
     text=await simple(`Clinical note-writing assistant. Professional, accurate, standard medical format. Generate A&P if not provided.`,`Write a ${noteType}:\n${pt?'Patient: '+pt+'\n':''}HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam/labs: '+exam:''}${ap?'\nA&P: '+ap:''}${cc}${pc}\n\nComplete note for attending review.`,'note-body','note-error','note-btn');
   }
@@ -1174,6 +1129,139 @@ async function generateQuestion(){
   finally{btn.classList.remove('loading');btn.disabled=false;}
 }
 function renderQuestion(q){document.getElementById('question-text').textContent=q.question;const grid=document.getElementById('options-grid');grid.innerHTML='';['A','B','C','D','E'].forEach(l=>{if(!q.choices[l])return;const btn=document.createElement('button');btn.className='option-btn';btn.innerHTML=`<span class="option-letter">${l}</span><span>${q.choices[l]}</span>`;btn.onclick=()=>{const isCorrect=l===q.correct;if(isCorrect)scoreCorrect++;else scoreWrong++;document.getElementById('score-correct').textContent=scoreCorrect;document.getElementById('score-wrong').textContent=scoreWrong;document.querySelectorAll('.option-btn').forEach(b=>{b.disabled=true;const letter=b.querySelector('.option-letter').textContent;if(letter===q.correct)b.classList.add(isCorrect&&letter===l?'correct':'reveal-correct');if(letter===l&&!isCorrect)b.classList.add('wrong');});const exp=document.getElementById('explanation-box');exp.className='explanation-box'+(isCorrect?'':' wrong-exp')+' visible';exp.innerHTML=`<strong>${isCorrect?'Correct!':'Incorrect — correct answer: '+q.correct}</strong>`+(q.highYield?`<div class="exp-highlight${isCorrect?'':' wrong'}" style="margin-top:8px;">&#9889; ${escHtml(q.highYield)}</div>`:'')+`<div style="margin-top:8px;">${q.explanation}</div>`;document.getElementById('next-btn').classList.add('visible');};grid.appendChild(btn);});document.getElementById('explanation-box').className='explanation-box';document.getElementById('explanation-box').innerHTML='';document.getElementById('question-card').style.display='block';}
+
+// ── Generic photo-to-text OCR ──
+async function photoToText(file, targetTextareaId) {
+  const textarea = document.getElementById(targetTextareaId);
+  const thumbsContainer = document.getElementById('thumbs-' + targetTextareaId);
+  const mime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const b64 = ev.target.result.split(',')[1];
+    const objUrl = URL.createObjectURL(file);
+    if (thumbsContainer) {
+      const thumb = document.createElement('img');
+      thumb.src = objUrl;
+      thumb.style.cssText = 'width:48px;height:48px;object-fit:cover;border-radius:6px;border:1.5px solid var(--border2);';
+      thumbsContainer.appendChild(thumb);
+    }
+    const origPlaceholder = textarea.placeholder;
+    textarea.placeholder = 'Processing photo...';
+    textarea.disabled = true;
+    try {
+      const data = await callAPI({
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
+            { type: 'text', text: 'Extract all text and clinical information from this image. Return only the extracted text, preserving the structure. If anything is illegible, write [illegible].' }
+          ]
+        }]
+      });
+      const extracted = data.content?.map(b => b.text || '').join('') || '';
+      const current = textarea.value.trim();
+      textarea.value = current ? current + '\n' + extracted : extracted;
+    } catch (e) {
+      console.error('Photo OCR error:', e);
+    }
+    textarea.disabled = false;
+    textarea.placeholder = origPlaceholder;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Generic mic transcription ──
+let activeMicTextarea = null;
+let fieldRecognition = null;
+
+function toggleFieldMic(textareaId, btn) {
+  const textarea = document.getElementById(textareaId);
+  if (fieldRecognition && activeMicTextarea === textareaId) {
+    fieldRecognition.stop();
+    fieldRecognition = null;
+    activeMicTextarea = null;
+    btn.classList.remove('recording');
+    btn.textContent = '\u{1F399}';
+    return;
+  }
+  if (fieldRecognition) {
+    fieldRecognition.stop();
+    document.querySelectorAll('.input-toolbar-btn.recording').forEach(b => {
+      b.classList.remove('recording');
+      b.textContent = '\u{1F399}';
+    });
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('Speech recognition not supported in this browser. Use Chrome.');
+    return;
+  }
+  fieldRecognition = new SpeechRecognition();
+  fieldRecognition.continuous = true;
+  fieldRecognition.interimResults = true;
+  fieldRecognition.lang = 'en-US';
+  activeMicTextarea = textareaId;
+  btn.classList.add('recording');
+  btn.textContent = '\u23F9';
+  let finalTranscript = textarea.value;
+  fieldRecognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        const text = event.results[i][0].transcript;
+        finalTranscript += (finalTranscript && !finalTranscript.endsWith(' ') ? ' ' : '') + text;
+        textarea.value = finalTranscript;
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+    if (interim) {
+      textarea.value = finalTranscript + ' ' + interim;
+    }
+  };
+  fieldRecognition.onerror = (event) => {
+    console.error('Speech error:', event.error);
+    btn.classList.remove('recording');
+    btn.textContent = '\u{1F399}';
+    activeMicTextarea = null;
+    fieldRecognition = null;
+  };
+  fieldRecognition.onend = () => {
+    if (activeMicTextarea === textareaId) {
+      try { fieldRecognition.start(); } catch(e) {
+        btn.classList.remove('recording');
+        btn.textContent = '\u{1F399}';
+        activeMicTextarea = null;
+        fieldRecognition = null;
+      }
+    }
+  };
+  fieldRecognition.start();
+}
+
+function triggerPhotoInput(textareaId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = (e) => {
+    Array.from(e.target.files).forEach(f => photoToText(f, textareaId));
+  };
+  input.click();
+}
+
+function triggerCameraInput(textareaId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'environment';
+  input.multiple = true;
+  input.onchange = (e) => {
+    Array.from(e.target.files).forEach(f => photoToText(f, textareaId));
+  };
+  input.click();
+}
 
 function copyResponse(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.innerText).then(()=>{const parent=el.closest('.response-section');if(parent){const btn=parent.querySelector('.copy-btn');if(btn){btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}}});}
 </script>
