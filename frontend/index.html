@@ -427,9 +427,8 @@ function renderAcronymList(){
         <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
           <div class="input-thumbs" id="thumbs-hx-chart"></div>
           <div style="margin-left:auto;display:flex;gap:4px;">
-            <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('hx-chart')" title="Take photo">📷</button>
-            <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('hx-chart')" title="Upload photo">🖼</button>
-            <button type="button" class="input-toolbar-btn" id="mic-hx-chart" onclick="toggleFieldMic('hx-chart', this)" title="Dictate">🎙</button>
+            <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('hx-chart')" title="Add photo">📷 Photo</button>
+            <button type="button" class="input-toolbar-btn" id="mic-hx-chart" onclick="toggleFieldMic('hx-chart', this)" title="Dictate">🎙 Speak</button>
           </div>
         </div>
       </div>
@@ -510,9 +509,8 @@ function renderAcronymList(){
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
             <div class="input-thumbs" id="thumbs-present-findings-text"></div>
             <div style="margin-left:auto;display:flex;gap:4px;">
-              <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('present-findings-text')" title="Take photo">📷</button>
-              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('present-findings-text')" title="Upload photo">🖼</button>
-              <button type="button" class="input-toolbar-btn" id="mic-present-findings-text" onclick="toggleFieldMic('present-findings-text', this)" title="Dictate">🎙</button>
+              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('present-findings-text')" title="Add photo">📷 Photo</button>
+              <button type="button" class="input-toolbar-btn" id="mic-present-findings-text" onclick="toggleFieldMic('present-findings-text', this)" title="Dictate">🎙 Speak</button>
             </div>
           </div>
         </div>
@@ -632,9 +630,8 @@ function renderAcronymList(){
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
             <div class="input-thumbs" id="thumbs-note-hpi"></div>
             <div style="margin-left:auto;display:flex;gap:4px;">
-              <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('note-hpi')" title="Take photo">📷</button>
-              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('note-hpi')" title="Upload photo">🖼</button>
-              <button type="button" class="input-toolbar-btn" id="mic-note-hpi" onclick="toggleFieldMic('note-hpi', this)" title="Dictate">🎙</button>
+              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('note-hpi')" title="Add photo">📷 Photo</button>
+              <button type="button" class="input-toolbar-btn" id="mic-note-hpi" onclick="toggleFieldMic('note-hpi', this)" title="Dictate">🎙 Speak</button>
             </div>
           </div>
         </div>
@@ -646,9 +643,8 @@ function renderAcronymList(){
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
             <div class="input-thumbs" id="thumbs-note-ap"></div>
             <div style="margin-left:auto;display:flex;gap:4px;">
-              <button type="button" class="input-toolbar-btn" onclick="triggerCameraInput('note-ap')" title="Take photo">📷</button>
-              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('note-ap')" title="Upload photo">🖼</button>
-              <button type="button" class="input-toolbar-btn" id="mic-note-ap" onclick="toggleFieldMic('note-ap', this)" title="Dictate">🎙</button>
+              <button type="button" class="input-toolbar-btn" onclick="triggerPhotoInput('note-ap')" title="Add photo">📷 Photo</button>
+              <button type="button" class="input-toolbar-btn" id="mic-note-ap" onclick="toggleFieldMic('note-ap', this)" title="Dictate">🎙 Speak</button>
             </div>
           </div>
         </div>
@@ -1182,7 +1178,7 @@ function toggleFieldMic(textareaId, btn) {
     fieldRecognition = null;
     activeMicTextarea = null;
     btn.classList.remove('recording');
-    btn.textContent = '\u{1F399}';
+    btn.textContent = '\u{1F399} Speak';
     return;
   }
   if (fieldRecognition) {
@@ -1203,7 +1199,7 @@ function toggleFieldMic(textareaId, btn) {
   fieldRecognition.lang = 'en-US';
   activeMicTextarea = textareaId;
   btn.classList.add('recording');
-  btn.textContent = '\u23F9';
+  btn.textContent = '\u23F9 Stop';
   let finalTranscript = textarea.value;
   fieldRecognition.onresult = (event) => {
     let interim = '';
@@ -1223,7 +1219,7 @@ function toggleFieldMic(textareaId, btn) {
   fieldRecognition.onerror = (event) => {
     console.error('Speech error:', event.error);
     btn.classList.remove('recording');
-    btn.textContent = '\u{1F399}';
+    btn.textContent = '\u{1F399} Speak';
     activeMicTextarea = null;
     fieldRecognition = null;
   };
@@ -1231,7 +1227,7 @@ function toggleFieldMic(textareaId, btn) {
     if (activeMicTextarea === textareaId) {
       try { fieldRecognition.start(); } catch(e) {
         btn.classList.remove('recording');
-        btn.textContent = '\u{1F399}';
+        btn.textContent = '\u{1F399} Speak';
         activeMicTextarea = null;
         fieldRecognition = null;
       }
@@ -1251,17 +1247,7 @@ function triggerPhotoInput(textareaId) {
   input.click();
 }
 
-function triggerCameraInput(textareaId) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.capture = 'environment';
-  input.multiple = true;
-  input.onchange = (e) => {
-    Array.from(e.target.files).forEach(f => photoToText(f, textareaId));
-  };
-  input.click();
-}
+
 
 function copyResponse(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.innerText).then(()=>{const parent=el.closest('.response-section');if(parent){const btn=parent.querySelector('.copy-btn');if(btn){btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}}});}
 </script>
