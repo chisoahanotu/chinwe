@@ -96,6 +96,21 @@
   .why-btn.open { color: var(--accent2); border-color: var(--accent); background: var(--accent-dim); }
   .why-rationale { font-size: 12px; color: var(--muted2); line-height: 1.6; margin-top: 6px; padding: 7px 10px; background: var(--surface2); border-radius: 6px; display: none; }
   .why-rationale.visible { display: block; }
+  .maneuver-tag { display: inline; background: rgba(0,151,167,0.1); color: var(--teal); border: 1px solid rgba(0,151,167,0.25); border-radius: 4px; padding: 1px 7px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: var(--sans); white-space: nowrap; }
+  .maneuver-tag:hover { background: rgba(0,151,167,0.2); border-color: var(--teal); }
+  .maneuver-overlay { position: fixed; inset: 0; background: rgba(13,46,38,0.5); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .maneuver-overlay.visible { display: flex; }
+  .maneuver-modal { background: var(--surface); border-radius: 14px; padding: 28px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); border: 1px solid var(--border2); }
+  .maneuver-modal-title { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--teal); margin-bottom: 4px; }
+  .maneuver-modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  .maneuver-modal-body { font-size: 13.5px; line-height: 1.8; color: var(--text); }
+  .maneuver-modal-body strong { color: var(--accent2); }
+  .maneuver-modal-body ol { padding-left: 20px; margin: 10px 0; }
+  .maneuver-modal-body li { margin-bottom: 6px; }
+  .maneuver-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; }
+  .maneuver-close:hover { color: var(--text); }
+  .maneuver-loading { text-align: center; padding: 30px; color: var(--muted); }
+  .maneuver-loading .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 10px; }
   .hx-pearl { font-size: 13px; font-style: italic; color: var(--muted2); line-height: 1.6; }
   /* Present */
   .present-path-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -407,6 +422,17 @@ function renderAcronymList(){
     <div class="clarify-actions">
       <button class="clarify-skip" onclick="proceedWithNote(true)">Skip — generate anyway</button>
       <button class="clarify-proceed" onclick="proceedWithNote(false)">Generate note ↗</button>
+    </div>
+  </div>
+</div>
+
+<div class="maneuver-overlay" id="maneuver-overlay" onclick="if(event.target===this)closeManeuver()">
+  <div class="maneuver-modal" style="position:relative;">
+    <button class="maneuver-close" onclick="closeManeuver()">&times;</button>
+    <div class="maneuver-modal-title" id="maneuver-title"></div>
+    <div class="maneuver-modal-sub">Clinical Maneuver Guide</div>
+    <div class="maneuver-modal-body" id="maneuver-body">
+      <div class="maneuver-loading"><div class="spinner"></div>Loading...</div>
     </div>
   </div>
 </div>
@@ -927,21 +953,21 @@ async function runHx(){
 
 Return ONLY valid JSON, no other text, no markdown fences. Structure:
 {"sections":[
-  {"title":"Onset & Character","items":[{"text":"Onset","highYield":true,"rationale":"Acute vs gradual onset narrows vascular vs structural vs metabolic etiology."},{"text":"Quality / character","highYield":false,"rationale":"Pressure vs sharp vs burning distinguishes cardiac vs pleuritic vs GI causes."}]},
+  {"title":"Onset & Character","items":[{"text":"Onset","highYield":true,"rationale":"Acute vs gradual onset narrows vascular vs structural vs metabolic etiology.","maneuvers":[]},{"text":"Quality / character","highYield":false,"rationale":"Pressure vs sharp vs burning distinguishes cardiac vs pleuritic vs GI causes.","maneuvers":[]}]},
   {"title":"Associated Symptoms","items":[...]},
   {"title":"PMH & Risk Factors","items":[...]},
   {"title":"Medications & Social History","items":[...]},
   {"title":"Physical Exam","items":[...]},
   {"title":"Red Flags","items":[...]},
-  {"title":"Attending Pearls","items":[{"text":"Full sentence teaching pearl here.","highYield":false,"rationale":""}]}
+  {"title":"Attending Pearls","items":[{"text":"Full sentence teaching pearl here.","highYield":false,"rationale":"","maneuvers":[]}]}
 ]}
 
 Rules:
-- Each item: "text" (shorthand, no question marks except Attending Pearls), "highYield" (bool), "rationale" (1 sentence plain ASCII)
+- Each item: "text" (shorthand), "highYield" (bool), "rationale" (1 sentence plain ASCII), "maneuvers" (array of strings)
+- "maneuvers": list any named clinical tests, signs, or maneuvers mentioned in the text OR rationale (e.g. ["Hawkins test","Neer test"]). Include exam maneuvers, named signs, specific scales/scores. Empty array if none.
 - 3-4 items per section max, 1-2 highYield per section
 - Attending Pearls: full sentences, teaching points not patient questions
-- If chart context provided, tailor items to this specific patient
-- If chart context is provided, tailor items to this specific patient`;
+- If chart context provided, tailor items to this specific patient`;
   try{
     const data=await callAPI({max_tokens:6000,messages:[{role:'user',content:prompt}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';
@@ -963,11 +989,12 @@ function renderHxOutput(data){
     const isPearls=sec.title==='Attending Pearls';
     sec.items.forEach((item,ii)=>{
       const itemEl=document.createElement('div');itemEl.className='hx-item';
+      const maneuvers=item.maneuvers||[];
       if(isPearls){
-        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main hx-pearl">${escHtml(item.text)}</span></div>`;
+        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main hx-pearl">${tagManeuvers(escHtml(item.text),maneuvers)}</span></div>`;
       }else{
         const uid=`why-${si}-${ii}`;
-        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${escHtml(item.text)}</span><button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button></div><div class="why-rationale" id="${uid}">${escHtml(item.rationale)}</div>`;
+        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${tagManeuvers(escHtml(item.text),maneuvers)}</span><button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button></div><div class="why-rationale" id="${uid}">${tagManeuvers(escHtml(item.rationale),maneuvers)}</div>`;
       }
       items.appendChild(itemEl);
     });
@@ -976,6 +1003,60 @@ function renderHxOutput(data){
 }
 function toggleWhy(uid){const el=document.getElementById(uid),btn=document.getElementById('btn-'+uid);const open=el.classList.toggle('visible');btn.classList.toggle('open',open);btn.textContent=open?'Hide':'Why ask?';}
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function tagManeuvers(html,maneuvers){
+  if(!maneuvers||maneuvers.length===0)return html;
+  maneuvers.forEach(m=>{
+    const escaped=m.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=new RegExp('('+escaped+')','gi');
+    html=html.replace(re,'<span class="maneuver-tag" onclick="openManeuver(\''+m.replace(/'/g,"\\'")+'\')">$1</span>');
+  });
+  return html;
+}
+
+let maneuverCache={};
+async function openManeuver(name){
+  const overlay=document.getElementById('maneuver-overlay');
+  const title=document.getElementById('maneuver-title');
+  const body=document.getElementById('maneuver-body');
+  title.textContent=name;
+  overlay.classList.add('visible');
+
+  if(maneuverCache[name]){
+    body.innerHTML=maneuverCache[name];
+    return;
+  }
+
+  body.innerHTML='<div class="maneuver-loading"><div class="spinner"></div>Loading guide...</div>';
+
+  try{
+    const data=await callAPI({max_tokens:1500,messages:[{role:'user',content:`Give a concise, step-by-step guide for performing the "${name}" clinical maneuver/test.
+
+Format:
+**Indication:** one sentence
+**Patient Position:** one sentence
+**Steps:**
+1. Step one
+2. Step two
+(etc, typically 3-6 steps)
+
+**Positive Finding:** what indicates a positive result
+**Sensitivity/Specificity:** if well-known, include approximate values
+**Clinical Pearl:** one practical tip
+
+Keep it concise and practical — written for a medical student about to perform this on a real patient.`}]});
+    const raw=data.content?.map(b=>b.text||'').join('')||'';
+    const formatted=fmt(raw);
+    maneuverCache[name]=formatted;
+    body.innerHTML=formatted;
+  }catch(e){
+    body.innerHTML='<span style="color:var(--red);">Error loading: '+e.message+'</span>';
+  }
+}
+
+function closeManeuver(){
+  document.getElementById('maneuver-overlay').classList.remove('visible');
+}
 function copyHx(){const sections=document.querySelectorAll('.hx-section');let text='';sections.forEach(s=>{const title=s.querySelector('.hx-section-title')?.textContent||'';text+=title+'\n';s.querySelectorAll('.hx-item-main').forEach(i=>text+='  - '+i.innerText.replace('HIGH YIELD','[HY]')+'\n');text+='\n';});navigator.clipboard.writeText(text.trim()).then(()=>{const btn=document.getElementById('hx-copy-btn');btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);});}
 
 // Present: Teach
