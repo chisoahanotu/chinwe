@@ -1122,9 +1122,10 @@ Format:
 
 **Positive Finding:** what indicates a positive result
 **Sensitivity/Specificity:** if well-known, include approximate values
-**Clinical Pearl:** one practical tip
 
-Keep it concise and practical — written for a medical student about to perform this on a real patient.`}]});
+Keep it concise and practical — written for a medical student about to perform this on a real patient.
+
+**Clinical Pearl:** one practical tip (put this last)`}]});
 
   let stanfordPromise=null;
   if(stanfordTopic){
@@ -1147,11 +1148,22 @@ Keep it concise and practical — written for a medical student about to perform
     body.innerHTML='<span style="color:var(--red);">Error loading: '+e.message+'</span>';
   }
 
-  // Render Stanford result
+  // Render Stanford result — filter images to match this specific maneuver
   if(stanfordPromise){
     try{
       const stanford=await stanfordPromise;
       if(stanford&&!stanford.error){
+        if(stanford.images&&stanford.images.length>1){
+          // Ask Claude to pick only images relevant to this specific test
+          try{
+            const filterData=await callAPI({max_tokens:300,messages:[{role:'user',content:`I have images from a Stanford Medicine 25 page about a full exam. I need ONLY the images relevant to the "${name}" specifically.\n\nImage list:\n${stanford.images.map((img,i)=>`${i}: alt="${img.alt||'no alt'}" src="${img.src.split('/').pop()}"`).join('\n')}\n\nReturn ONLY a JSON array of index numbers for images that show or relate to the ${name} specifically. If unsure, include it. Example: [0,3,5]\nJSON array only, no other text.`}]});
+            const filterRaw=filterData.content?.map(b=>b.text||'').join('')||'[]';
+            const indices=JSON.parse(filterRaw.replace(/```json|```/g,'').trim());
+            if(Array.isArray(indices)&&indices.length>0){
+              stanford.filteredImages=indices.map(i=>stanford.images[i]).filter(Boolean);
+            }
+          }catch(fe){/* use all images as fallback */}
+        }
         maneuverCache[name].stanford=stanford;
         renderStanford(stanford);
       }
@@ -1170,17 +1182,29 @@ function renderStanford(data){
   videoEl.innerHTML='';
   linkEl.innerHTML='';
 
-  // Images
-  if(data.images&&data.images.length>0){
-    data.images.slice(0,6).forEach(img=>{
+  // Images — use filtered if available, otherwise all
+  const imgs=data.filteredImages||data.images||[];
+  if(imgs.length>0){
+    imgs.slice(0,6).forEach(img=>{
+      const wrap=document.createElement('div');
+      wrap.style.cssText='position:relative;display:inline-block;';
       const imgEl=document.createElement('img');
       imgEl.className='stanford-img';
       imgEl.src=img.src;
       imgEl.alt=img.alt||'Stanford Medicine 25';
       imgEl.title=img.alt||'Click to enlarge';
       imgEl.onclick=()=>window.open(img.src,'_blank');
-      imgEl.onerror=()=>imgEl.remove();
-      imagesEl.appendChild(imgEl);
+      imgEl.onerror=()=>wrap.remove();
+      const dismiss=document.createElement('button');
+      dismiss.textContent='×';
+      dismiss.title='Remove image';
+      dismiss.style.cssText='position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(13,46,38,0.7);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;';
+      wrap.onmouseenter=()=>dismiss.style.opacity='1';
+      wrap.onmouseleave=()=>dismiss.style.opacity='0';
+      dismiss.onclick=(e)=>{e.stopPropagation();wrap.remove();};
+      wrap.appendChild(imgEl);
+      wrap.appendChild(dismiss);
+      imagesEl.appendChild(wrap);
     });
   }
 
