@@ -964,24 +964,21 @@ async function runHx(){
   output.innerHTML='<span style="color:var(--muted);font-size:13px;">Generating...</span>';section.classList.add('visible');
   const prompt=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}${chart?'\nChart context: '+chart:''}
 
-Return ONLY valid JSON, no other text, no markdown fences. Structure:
-{"sections":[
-  {"title":"Onset & Character","items":[{"text":"Onset","highYield":true,"rationale":"Acute vs gradual onset narrows vascular vs structural vs metabolic etiology.","maneuvers":[]},{"text":"Quality / character","highYield":false,"rationale":"Pressure vs sharp vs burning distinguishes cardiac vs pleuritic vs GI causes.","maneuvers":[]}]},
-  {"title":"Associated Symptoms","items":[...]},
-  {"title":"PMH & Risk Factors","items":[...]},
-  {"title":"Medications & Social History","items":[...]},
-  {"title":"Physical Exam","items":[...]},
-  {"title":"Red Flags","items":[...]},
-  {"title":"Attending Pearls","items":[{"text":"Full sentence teaching pearl here.","highYield":false,"rationale":"","maneuvers":[]}]}
-]}
+Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JSON object.
+
+Required structure: {"sections":[...]} where sections is an array of 7 objects with titles: "Onset & Character", "Associated Symptoms", "PMH & Risk Factors", "Medications & Social History", "Physical Exam", "Red Flags", "Attending Pearls".
+
+Each section has "title" (string) and "items" (array). Each item has:
+- "text": string (shorthand name, no question marks)
+- "highYield": boolean
+- "rationale": string (1 detailed sentence — MUST name specific clinical tests by name when relevant, e.g. "Hawkins and Neer tests assess subacromial impingement; Empty Can test isolates supraspinatus." Never be vague.)
+- "maneuvers": array of strings listing any named tests/signs/maneuvers mentioned in text or rationale (e.g. ["Hawkins test","Neer test"]). Empty array [] if none.
 
 Rules:
-- Each item: "text" (shorthand), "highYield" (bool), "rationale" (1 sentence plain ASCII — MUST be detailed and mention specific test names by name), "maneuvers" (array of strings)
-- "rationale" MUST name specific clinical tests, signs, scores, and maneuvers when relevant. For Physical Exam items, ALWAYS name the exact tests to perform (e.g. "Hawkins and Neer tests assess subacromial impingement; Empty Can test isolates supraspinatus"). Never be vague — name the tests.
-- "maneuvers": duplicate list of any named clinical tests, signs, or maneuvers that appear in "text" or "rationale" (e.g. ["Hawkins test","Neer test","Empty Can test"]). This is an index for tagging — the names MUST also appear in the rationale text itself. Empty array only if genuinely no named tests apply.
-- 3-4 items per section max, 1-2 highYield per section
-- Attending Pearls: full sentences, teaching points not patient questions
-- If chart context provided, tailor items to this specific patient`;
+- 3-4 items per section, 1-2 highYield per section
+- Physical Exam items MUST name exact tests to perform in the rationale
+- Attending Pearls: full teaching sentences, rationale can be empty string
+- If chart context given, tailor to this patient`;
   try{
     const data=await callAPI({max_tokens:6000,messages:[{role:'user',content:prompt}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';
