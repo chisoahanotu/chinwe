@@ -281,7 +281,80 @@ var splashReady=false;
 (function(){if(localStorage.getItem('chinwe_ack')==='1'){var s=document.getElementById('splash');if(s)s.style.display='none';}})();
 function handleAck(cb){splashReady=cb.checked;var btn=document.getElementById('enter-btn');btn.style.opacity=splashReady?'1':'0.4';btn.style.cursor=splashReady?'pointer':'not-allowed';}
 function enterApp(){if(splashReady){localStorage.setItem('chinwe_ack','1');document.getElementById('splash').style.display='none';switchTab('hx');}}
-function openSettings(){alert("Settings coming soon! Profile system will be added in the next update.");}
+
+function openSettings(){
+  var o=document.getElementById('settings-overlay');
+  o.style.display='flex';
+  renderAcronymList();
+  var nt=localStorage.getItem('chinwe_note_template');
+  var ps=localStorage.getItem('chinwe_pres_style');
+  var ntEl=document.getElementById('note-template');
+  var psEl=document.getElementById('pres-style');
+  if(ntEl&&nt)ntEl.value=nt;
+  if(psEl&&ps)psEl.value=ps;
+}
+function closeSettings(){
+  var o=document.getElementById('settings-overlay');
+  if(o)o.style.display='none';
+}
+function saveSetting(key,btnId,label){
+  var el=document.getElementById(key);
+  if(!el)return;
+  localStorage.setItem('chinwe_'+key.replace('-','_'),el.value);
+  var btn=document.getElementById(btnId);
+  if(btn){btn.textContent='Saved!';setTimeout(function(){btn.textContent=label;},1500);}
+}
+function getAcronyms(){
+  try{return JSON.parse(localStorage.getItem('chinwe_acronyms')||'[]');}catch(e){return[];}
+}
+function expandAcronyms(text){
+  var acr=getAcronyms();
+  acr.forEach(function(a){
+    var re=new RegExp('\b'+a.key+'\b','gi');
+    text=text.replace(re,a.val);
+  });
+  return text;
+}
+function addAcronym(){
+  var k=document.getElementById('acronym-key').value.trim().toUpperCase();
+  var v=document.getElementById('acronym-val').value.trim();
+  if(!k||!v)return;
+  var acr=getAcronyms();
+  var i=acr.findIndex(function(a){return a.key===k;});
+  if(i>=0)acr[i].val=v;else acr.push({key:k,val:v});
+  localStorage.setItem('chinwe_acronyms',JSON.stringify(acr));
+  document.getElementById('acronym-key').value='';
+  document.getElementById('acronym-val').value='';
+  renderAcronymList();
+}
+function deleteAcronym(key){
+  var acr=getAcronyms().filter(function(a){return a.key!==key;});
+  localStorage.setItem('chinwe_acronyms',JSON.stringify(acr));
+  renderAcronymList();
+}
+function renderAcronymList(){
+  var container=document.getElementById('acronym-list');
+  if(!container)return;
+  var acr=getAcronyms();
+  if(!acr.length){container.innerHTML='<div style="font-size:11px;color:#6b9e90;">No acronyms yet.</div>';return;}
+  container.innerHTML='';
+  acr.forEach(function(a){
+    var r=document.createElement('div');
+    r.style.cssText='display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,160,120,0.1);';
+    var keySpan=document.createElement('span');
+    keySpan.style.cssText='font-family:monospace;font-size:11px;background:rgba(0,168,120,0.1);color:#008f65;border-radius:4px;padding:1px 6px;';
+    keySpan.textContent=a.key;
+    var valSpan=document.createElement('span');
+    valSpan.style.cssText='font-size:11px;color:#6b9e90;flex:1;';
+    valSpan.textContent=a.val;
+    var delBtn=document.createElement('button');
+    delBtn.style.cssText='background:none;border:none;color:#6b9e90;cursor:pointer;font-size:12px;';
+    delBtn.textContent='x';
+    delBtn.onclick=function(){deleteAcronym(a.key);};
+    r.appendChild(keySpan);r.appendChild(valSpan);r.appendChild(delBtn);
+    container.appendChild(r);
+  });
+}
 </script>
 
 <div class="topbar" style="justify-content:space-between;">
@@ -1089,5 +1162,35 @@ function renderQuestion(q){document.getElementById('question-text').textContent=
 
 function copyResponse(id){const el=document.getElementById(id);if(!el)return;navigator.clipboard.writeText(el.innerText).then(()=>{const parent=el.closest('.response-section');if(parent){const btn=parent.querySelector('.copy-btn');if(btn){btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}}});}
 </script>
+<div id="settings-overlay" onclick="if(event.target===this)closeSettings()" style="position:fixed;inset:0;background:rgba(13,46,38,0.5);z-index:400;display:none;align-items:flex-start;justify-content:flex-end;">
+<div style="background:#fff;width:100%;max-width:400px;height:100vh;overflow-y:auto;box-shadow:-4px 0 32px rgba(0,0,0,0.15);padding:24px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(0,160,120,0.2);padding-bottom:12px;">
+<span style="font-family:monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#008f65;">Settings</span>
+<button onclick="closeSettings()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b9e90;">x</button>
+</div>
+<div style="margin-bottom:24px;">
+<div style="font-family:monospace;font-size:10px;text-transform:uppercase;color:#00a878;margin-bottom:8px;">Custom Acronyms</div>
+<div style="font-size:11px;color:#6b9e90;margin-bottom:10px;">Teach the app your shorthand. Expanded in typed and photo notes.</div>
+<div id="acronym-list" style="margin-bottom:10px;"></div>
+<div style="display:flex;gap:6px;">
+<input id="acronym-key" placeholder="NVP" style="width:70px;padding:7px;border:1.5px solid rgba(0,160,120,0.3);border-radius:6px;font-size:12px;outline:none;" />
+<input id="acronym-val" placeholder="nausea, vomiting, pain" style="flex:1;padding:7px;border:1.5px solid rgba(0,160,120,0.3);border-radius:6px;font-size:12px;outline:none;" />
+<button onclick="addAcronym()" style="background:#00a878;color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;">Add</button>
+</div>
+</div>
+<div style="margin-bottom:24px;">
+<div style="font-family:monospace;font-size:10px;text-transform:uppercase;color:#00a878;margin-bottom:8px;">Note Template</div>
+<div style="font-size:11px;color:#6b9e90;margin-bottom:8px;">Paste an attending-approved example note. Claude will style-match it.</div>
+<textarea id="note-template" placeholder="Paste example note here..." style="width:100%;height:120px;padding:10px;border:1.5px solid rgba(0,160,120,0.3);border-radius:7px;font-size:12px;outline:none;resize:vertical;font-family:sans-serif;"></textarea>
+<button id="save-note-btn" onclick="saveSetting('note-template','save-note-btn','Save template')" style="margin-top:6px;background:#00a878;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;">Save template</button>
+</div>
+<div style="margin-bottom:24px;">
+<div style="font-family:monospace;font-size:10px;text-transform:uppercase;color:#00a878;margin-bottom:8px;">Presentation Style</div>
+<div style="font-size:11px;color:#6b9e90;margin-bottom:8px;">Attending-specific format preferences for presentations and grading.</div>
+<textarea id="pres-style" placeholder="e.g. Always one-liner first. Keep HPI under 60 seconds. End with assessment before plan..." style="width:100%;height:80px;padding:10px;border:1.5px solid rgba(0,160,120,0.3);border-radius:7px;font-size:12px;outline:none;resize:vertical;font-family:sans-serif;"></textarea>
+<button id="save-pres-btn" onclick="saveSetting('pres-style','save-pres-btn','Save style')" style="margin-top:6px;background:#00a878;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;">Save style</button>
+</div>
+</div>
+</div>
 </body>
 </html>
