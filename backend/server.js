@@ -208,24 +208,25 @@ app.get('/api/curated-images/:maneuver', (req, res) => {
   const key = req.params.maneuver.toLowerCase().trim();
   const entry = curated[key];
   if (!entry) return res.json({ curated: false });
-  res.json({ curated: true, approved: entry.approved || [], rejected: entry.rejected || [] });
+  res.json({ curated: true, images: entry.images || [], approved: entry.approved || [], rejected: entry.rejected || [] });
 });
 
-// POST approve/reject images for a maneuver
-// body: { maneuver: "Hawkins test", approved: ["url1","url2"], rejected: ["url3"] }
+// POST save curated images for a maneuver
+// body: { maneuver: "Hawkins test", images: [{data:"base64...",mime:"image/jpeg",caption:"..."}] }
 app.post('/api/curated-images', (req, res) => {
-  const { maneuver, approved, rejected } = req.body;
+  const { maneuver, images, approved, rejected } = req.body;
   if (!maneuver) return res.status(400).json({ error: 'maneuver required' });
   const curated = loadCurated();
   const key = maneuver.toLowerCase().trim();
   curated[key] = {
     maneuver,
+    images: images || [],
     approved: approved || [],
     rejected: rejected || [],
     updated_at: new Date().toISOString(),
   };
   saveCurated(curated);
-  res.json({ ok: true, maneuver: key });
+  res.json({ ok: true, maneuver: key, imageCount: (images || []).length });
 });
 
 // GET all curated maneuvers (admin overview)

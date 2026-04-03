@@ -1098,6 +1098,7 @@ async function openManeuver(name){
   title.textContent=name;
   overlay.classList.add('visible');
   stanfordSection.style.display='none';
+  pendingManeuverImages=[];
   stanfordImages.innerHTML='';
   stanfordVideo.innerHTML='';
   stanfordLink.innerHTML='';
@@ -1155,26 +1156,14 @@ Keep it concise and practical — written for a medical student about to perform
     try{
       const stanford=await stanfordPromise;
       if(stanford&&!stanford.error){
-        // Check if admin has curated images for this maneuver
+        // Check if admin has uploaded curated images for this maneuver
         try{
           const curatedResp=await fetch(API_BASE+'/api/curated-images/'+encodeURIComponent(name.toLowerCase().trim()));
           const curatedData=await curatedResp.json();
-          if(curatedData.curated&&curatedData.approved&&curatedData.approved.length>0){
-            stanford._curatedApproved=curatedData.approved;
+          if(curatedData.curated&&curatedData.images&&curatedData.images.length>0){
+            stanford._uploadedImages=curatedData.images;
           }
-        }catch(ce){/* no curated data, show all */}
-
-        // If not curated and admin isn't reviewing, still try Claude filter
-        if(!stanford._curatedApproved&&stanford.images&&stanford.images.length>1&&localStorage.getItem('chinwe_admin')!=='1'){
-          try{
-            const filterData=await callAPI({max_tokens:300,messages:[{role:'user',content:`I have images from a Stanford Medicine 25 page about a full exam. I need ONLY the images relevant to the "${name}" specifically.\n\nImage list:\n${stanford.images.map((img,i)=>`${i}: alt="${img.alt||'no alt'}" src="${img.src.split('/').pop()}"`).join('\n')}\n\nReturn ONLY a JSON array of index numbers for images that show or relate to the ${name} specifically. If unsure, include it. Example: [0,3,5]\nJSON array only, no other text.`}]});
-            const filterRaw=filterData.content?.map(b=>b.text||'').join('')||'[]';
-            const indices=JSON.parse(filterRaw.replace(/```json|```/g,'').trim());
-            if(Array.isArray(indices)&&indices.length>0){
-              stanford.filteredImages=indices.map(i=>stanford.images[i]).filter(Boolean);
-            }
-          }catch(fe){/* use all images as fallback */}
-        }
+        }catch(ce){/* no curated data */}
 
         maneuverCache[name].stanford=stanford;
         renderStanford(stanford);
@@ -1194,61 +1183,68 @@ function renderStanford(data){
   videoEl.innerHTML='';
   linkEl.innerHTML='';
 
-  // Images — check for admin-curated images first
-  const imgs=data.filteredImages||data.images||[];
-  const maneuverName=document.getElementById('maneuver-title').textContent;
+  // Images — show uploaded curated images, or upload zone if admin
   const isAdmin=localStorage.getItem('chinwe_admin')==='1';
+  const maneuverName=document.getElementById('maneuver-title').textContent;
 
-  if(data._curatedApproved){
-    // Show only pre-approved images
-    data._curatedApproved.forEach(src=>{
-      const imgEl=document.createElement('img');
-      imgEl.className='stanford-img';
-      imgEl.src=src;
-      imgEl.alt='Stanford Medicine 25';
-      imgEl.title='Click to enlarge';
-      imgEl.onclick=()=>window.open(src,'_blank');
-      imgEl.onerror=()=>imgEl.remove();
-      imagesEl.appendChild(imgEl);
-    });
-  }else if(imgs.length>0){
-    // Not yet curated — show all with approve/reject if admin
-    imgs.slice(0,10).forEach((img,idx)=>{
+  if(data._uploadedImages&&data._uploadedImages.length>0){
+    // Show curated uploaded images
+    data._uploadedImages.forEach(img=>{
       const wrap=document.createElement('div');
       wrap.style.cssText='position:relative;display:inline-block;';
-      wrap.dataset.src=img.src;
       const imgEl=document.createElement('img');
       imgEl.className='stanford-img';
-      imgEl.src=img.src;
-      imgEl.alt=img.alt||'Stanford Medicine 25';
-      imgEl.title=img.alt||'Click to enlarge';
-      imgEl.onclick=()=>window.open(img.src,'_blank');
-      imgEl.onerror=()=>wrap.remove();
-      wrap.appendChild(imgEl);
-      if(isAdmin){
-        const ctrl=document.createElement('div');
-        ctrl.style.cssText='display:flex;gap:2px;justify-content:center;margin-top:2px;';
-        const approve=document.createElement('button');
-        approve.textContent='✓';
-        approve.title='Approve';
-        approve.style.cssText='width:24px;height:20px;border-radius:4px;border:1px solid var(--green);background:rgba(22,163,74,0.1);color:var(--green);cursor:pointer;font-size:12px;';
-        approve.onclick=(e)=>{e.stopPropagation();wrap.dataset.status='approved';approve.style.background='var(--green)';approve.style.color='#fff';reject.style.background='rgba(229,57,53,0.1)';reject.style.color='var(--red)';};
-        const reject=document.createElement('button');
-        reject.textContent='×';
-        reject.title='Reject';
-        reject.style.cssText='width:24px;height:20px;border-radius:4px;border:1px solid var(--red);background:rgba(229,57,53,0.1);color:var(--red);cursor:pointer;font-size:12px;';
-        reject.onclick=(e)=>{e.stopPropagation();wrap.dataset.status='rejected';reject.style.background='var(--red)';reject.style.color='#fff';approve.style.background='rgba(22,163,74,0.1)';approve.style.color='var(--green)';imgEl.style.opacity='0.3';};
-        ctrl.appendChild(approve);ctrl.appendChild(reject);
-        wrap.appendChild(ctrl);
-      }
+      imgEl.src='data:'+img.mime+';base64,'+img.data;
+      imgEl.alt=img.caption||'Clinical maneuver';
+      imgEl.title=img.caption||'Click to enlarge';
+      imgEl.onclick=()=>{const w=window.open('');w.document.write('<img src="'+imgEl.src+'" style="max-width:100%;"/>');};
       imagesEl.appendChild(wrap);
+      if(img.caption){
+        const cap=document.createElement('div');
+        cap.style.cssText='font-size:10px;color:var(--muted);text-align:center;max-width:140px;margin-top:2px;';
+        cap.textContent=img.caption;
+        wrap.appendChild(imgEl);wrap.appendChild(cap);
+      }else{wrap.appendChild(imgEl);}
+      // Admin: remove button
+      if(isAdmin){
+        const rm=document.createElement('button');
+        rm.textContent='×';
+        rm.style.cssText='position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+        rm.onclick=(e)=>{e.stopPropagation();wrap.remove();};
+        wrap.appendChild(rm);
+      }
     });
-    if(isAdmin){
-      const saveRow=document.createElement('div');
-      saveRow.style.cssText='width:100%;margin-top:8px;';
-      saveRow.innerHTML='<button onclick="saveCuratedImages()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);">Save image selections</button>';
-      imagesEl.appendChild(saveRow);
-    }
+  }
+
+  if(isAdmin){
+    // Upload zone for admin
+    const uploadZone=document.createElement('div');
+    uploadZone.id='maneuver-upload-zone';
+    uploadZone.style.cssText='border:2px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;margin-top:8px;cursor:pointer;transition:all 0.15s;width:100%;';
+    uploadZone.innerHTML='<div style="font-size:12px;color:var(--muted2);margin-bottom:4px;">📷 Drop images here or click to upload</div><div style="font-size:10px;color:var(--muted);">Images you add here will be shown to all students for this maneuver</div>';
+
+    // Click to upload
+    uploadZone.onclick=()=>{
+      const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;
+      inp.onchange=(e)=>handleManeuverImageUpload(e.target.files);
+      inp.click();
+    };
+
+    // Drag and drop
+    uploadZone.ondragover=(e)=>{e.preventDefault();uploadZone.style.borderColor='var(--teal)';uploadZone.style.background='rgba(0,151,167,0.05)';};
+    uploadZone.ondragleave=()=>{uploadZone.style.borderColor='';uploadZone.style.background='';};
+    uploadZone.ondrop=(e)=>{e.preventDefault();uploadZone.style.borderColor='';uploadZone.style.background='';
+      const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
+      if(files.length>0) handleManeuverImageUpload(files);
+    };
+
+    imagesEl.appendChild(uploadZone);
+
+    // Save button
+    const saveRow=document.createElement('div');
+    saveRow.style.cssText='width:100%;margin-top:8px;display:flex;gap:8px;';
+    saveRow.innerHTML='<button onclick="saveManeuverImages()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">Save images</button><span id="maneuver-save-status" style="font-size:11px;color:var(--muted);align-self:center;"></span>';
+    imagesEl.appendChild(saveRow);
   }
 
   // YouTube video
@@ -1276,27 +1272,70 @@ function closeManeuver(){
   document.getElementById('maneuver-overlay').classList.remove('visible');
 }
 
-async function saveCuratedImages(){
-  const maneuver=document.getElementById('maneuver-title').textContent;
-  const wraps=document.querySelectorAll('#stanford-images [data-src]');
-  const approved=[],rejected=[];
-  wraps.forEach(w=>{
-    if(w.dataset.status==='approved') approved.push(w.dataset.src);
-    else if(w.dataset.status==='rejected') rejected.push(w.dataset.src);
+let pendingManeuverImages=[];
+
+function handleManeuverImageUpload(files){
+  Array.from(files).forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=(ev)=>{
+      const b64=ev.target.result.split(',')[1];
+      pendingManeuverImages.push({data:b64,mime:f.type||'image/jpeg',caption:''});
+      // Show preview
+      const imagesEl=document.getElementById('stanford-images');
+      const zone=document.getElementById('maneuver-upload-zone');
+      const wrap=document.createElement('div');
+      wrap.style.cssText='position:relative;display:inline-block;';
+      const img=document.createElement('img');
+      img.className='stanford-img';
+      img.src=ev.target.result;
+      img.alt='Uploaded';
+      img.style.border='2px solid var(--green)';
+      const rm=document.createElement('button');
+      rm.textContent='×';
+      rm.style.cssText='position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+      const idx=pendingManeuverImages.length-1;
+      rm.onclick=(e)=>{e.stopPropagation();pendingManeuverImages[idx]=null;wrap.remove();};
+      wrap.appendChild(img);wrap.appendChild(rm);
+      if(zone)imagesEl.insertBefore(wrap,zone);
+      else imagesEl.appendChild(wrap);
+    };
+    reader.readAsDataURL(f);
   });
-  if(approved.length===0&&rejected.length===0){alert('Mark at least one image as approved (✓) or rejected (×).');return;}
+}
+
+async function saveManeuverImages(){
+  const maneuver=document.getElementById('maneuver-title').textContent;
+  const images=pendingManeuverImages.filter(Boolean);
+
+  // Also include any existing uploaded images that weren't removed
+  if(maneuverCache[maneuver]?.stanford?._uploadedImages){
+    const existing=maneuverCache[maneuver].stanford._uploadedImages;
+    // Prepend existing that are still in the DOM
+    images.unshift(...existing);
+  }
+
+  if(images.length===0){
+    document.getElementById('maneuver-save-status').textContent='Add at least one image first.';
+    return;
+  }
+
+  const status=document.getElementById('maneuver-save-status');
+  status.textContent='Saving...';
+
   try{
     await fetch(API_BASE+'/api/curated-images',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({maneuver,approved,rejected}),
+      body:JSON.stringify({maneuver,images}),
     });
     // Update cache
     if(maneuverCache[maneuver]&&maneuverCache[maneuver].stanford){
-      maneuverCache[maneuver].stanford._curatedApproved=approved;
+      maneuverCache[maneuver].stanford._uploadedImages=images;
     }
-    alert('Saved! Students will only see approved images for '+maneuver+'.');
-  }catch(e){alert('Error saving: '+e.message);}
+    pendingManeuverImages=[];
+    status.textContent='Saved! Students will see these images.';
+    setTimeout(()=>{status.textContent='';},3000);
+  }catch(e){status.textContent='Error: '+e.message;}
 }
 function copyHx(){const sections=document.querySelectorAll('.hx-section');let text='';sections.forEach(s=>{const title=s.querySelector('.hx-section-title')?.textContent||'';text+=title+'\n';s.querySelectorAll('.hx-item-main').forEach(i=>text+='  - '+i.innerText.replace('HIGH YIELD','[HY]')+'\n');text+='\n';});navigator.clipboard.writeText(text.trim()).then(()=>{const btn=document.getElementById('hx-copy-btn');btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);});}
 
