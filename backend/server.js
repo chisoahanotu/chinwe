@@ -110,4 +110,84 @@ app.post('/api/chat/stream', async (req, res) => {
   }
 });
 
+// ── Stanford Medicine 25 page fetcher ──────────────────────────
+app.post('/api/stanford-fetch', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url || !url.startsWith('https://stanfordmedicine25.stanford.edu/') && !url.startsWith('https://med.stanford.edu/')) {
+      return res.status(400).json({ error: 'Invalid Stanford URL' });
+    }
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+      timeout: 10000,
+    });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `Stanford returned ${response.status}` });
+    }
+    const html = await response.text();
+
+    // Extract images with src containing stanford
+    const images = [];
+    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*)["'])?[^>]*>/gi;
+    let match;
+    while ((match = imgRegex.exec(html)) !== null) {
+      let src = match[1];
+      // Skip tiny icons, tracking pixels, logos
+      if (src.includes('logo') || src.includes('icon') || src.includes('favicon') || src.includes('pixel') || src.includes('badge')) continue;
+      // Make absolute
+      if (src.startsWith('/')) src = 'https://stanfordmedicine25.stanford.edu' + src;
+      else if (src.startsWith('//')) src = 'https:' + src;
+      if (!src.startsWith('http')) continue;
+      images.push({ src, alt: match[2] || '' });
+    }
+
+    // Extract YouTube embed URLs
+    const youtubeLinks = [];
+    const ytRegex = /(?:src=["']|href=["'])([^"']*(?:youtube\.com|youtu\.be)[^"']*)["']/gi;
+    while ((match = ytRegex.exec(html)) !== null) {
+      youtubeLinks.push(match[1]);
+    }
+
+    // Also check for YouTube video IDs in iframes
+    const iframeRegex = /<iframe[^>]+src=["']([^"']*youtube[^"']*)["'][^>]*>/gi;
+    while ((match = iframeRegex.exec(html)) !== null) {
+      if (!youtubeLinks.includes(match[1])) youtubeLinks.push(match[1]);
+    }
+
+    // Extract main content text (strip HTML, get body text)
+    let bodyText = '';
+    const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i) ||
+                      html.match(/<article[^>]*>([\s\S]*?)<\/article>/i) ||
+                      html.match(/<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+    if (mainMatch) {
+      bodyText = mainMatch[1]
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+        .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
+        .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 3000);
+    }
+
+    // Extract page title
+    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i) ||
+                       html.match(/<h1[^>]*>([^<]*)<\/h1>/i);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+
+    res.json({
+      title,
+      images: images.slice(0, 10), // max 10 images
+      youtubeLinks: youtubeLinks.slice(0, 3),
+      bodyText,
+      url,
+    });
+  } catch (err) {
+    console.error('Stanford fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch Stanford page' });
+  }
+});
+
 app.listen(PORT, () => console.log(`Chinwe backend running on port ${PORT}`));

@@ -111,6 +111,10 @@
   .maneuver-close:hover { color: var(--text); }
   .maneuver-loading { text-align: center; padding: 30px; color: var(--muted); }
   .maneuver-loading .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 10px; }
+  .stanford-img { width: 140px; height: 105px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--border2); cursor: pointer; transition: all 0.15s; }
+  .stanford-img:hover { border-color: var(--teal); transform: scale(1.03); }
+  .stanford-link { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,151,167,0.08); border: 1px solid rgba(0,151,167,0.2); color: var(--teal); border-radius: 7px; padding: 8px 14px; font-size: 12px; font-weight: 600; text-decoration: none; transition: all 0.15s; }
+  .stanford-link:hover { background: rgba(0,151,167,0.15); }
   .hx-pearl { font-size: 13px; font-style: italic; color: var(--muted2); line-height: 1.6; }
   /* Present */
   .present-path-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -433,6 +437,13 @@ function renderAcronymList(){
     <div class="maneuver-modal-sub">Clinical Maneuver Guide</div>
     <div class="maneuver-modal-body" id="maneuver-body">
       <div class="maneuver-loading"><div class="spinner"></div>Loading...</div>
+    </div>
+    <div id="maneuver-stanford" style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid var(--border2);">
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;">Stanford Medicine 25</div>
+      <div id="stanford-images" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;"></div>
+      <div id="stanford-video" style="margin-bottom:12px;"></div>
+      <div id="stanford-link" style="margin-bottom:12px;"></div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Exam guide and images courtesy of <a href="https://stanfordmedicine25.stanford.edu/the25.html" target="_blank" style="color:var(--teal);text-decoration:underline;">Stanford Medicine 25</a> — Stanford University School of Medicine</div>
     </div>
   </div>
 </div>
@@ -1016,22 +1027,90 @@ function tagManeuvers(html,maneuvers){
 }
 
 let maneuverCache={};
+
+// Stanford Medicine 25 topic mapping
+const STANFORD_TOPICS=[
+  {topic:'Shoulder Exam',slug:'the25/shoulder',keys:['shoulder','hawkins','neer','empty can','drop arm','speed','yergason','apprehension','sulcus','obrien','cross body','rotator cuff','impingement','supraspinatus']},
+  {topic:'Knee Exam',slug:'the25/knee',keys:['knee','mcmurray','lachman','anterior drawer','posterior drawer','valgus stress','varus stress','pivot shift','acl','mcl','meniscus','patellar','thessaly']},
+  {topic:'Low Back Exam',slug:'the25/low-back',keys:['low back','straight leg raise','slr','lasegue','crossed slr','sacroiliac','faber','patrick','schober']},
+  {topic:'Hip Region',slug:'the25/hip',keys:['hip','trendelenburg','faber','patrick','log roll','thomas test','ober test','piriformis']},
+  {topic:'Ankle and Foot',slug:'the25/ankle-and-foot',keys:['ankle','foot','thompson','anterior drawer ankle','talar tilt','ottawa','squeeze test','achilles']},
+  {topic:'Carpal Tunnel',slug:'the25/carpal-tunnel',keys:['carpal tunnel','phalen','tinel','durkan','flick sign','median nerve']},
+  {topic:'Tarsal Tunnel',slug:'the25/tarsal-tunnel',keys:['tarsal tunnel','tinel ankle','tibial nerve','dorsiflexion eversion']},
+  {topic:'Hand Exam',slug:'the25/hand',keys:['hand','finkelstein','froment','allen test','grip','mallet finger','boutonniere','swan neck','trigger finger','dupuytren']},
+  {topic:'Cerebellar Exam',slug:'the25/cerebellar',keys:['cerebellar','romberg','finger to nose','heel to shin','dysdiadochokinesia','rapid alternating','tandem gait','dysmetria','intention tremor','nystagmus']},
+  {topic:'Deep Tendon Reflexes',slug:'the25/deep-tendon-reflexes',keys:['reflex','deep tendon','dtr','babinski','clonus','hoffman','biceps reflex','patellar reflex','achilles reflex','brachioradialis']},
+  {topic:'Gait Abnormalities',slug:'the25/gait',keys:['gait','trendelenburg gait','steppage','antalgic','ataxic gait','waddling','spastic gait','parkinsonian gait','scissoring']},
+  {topic:'Pulmonary Exam',slug:'the25/pulmonary',keys:['pulmonary','lung','auscultation','percussion','egophony','tactile fremitus','whispered pectoriloquy','bronchophony','crackles','wheezes','rhonchi','diaphragm excursion']},
+  {topic:'Liver Exam',slug:'the25/liver',keys:['liver','hepatomegaly','scratch test','liver span','hepatojugular reflux']},
+  {topic:'Spleen Exam',slug:'the25/spleen',keys:['spleen','splenomegaly','traube','castell','nixon']},
+  {topic:'Thyroid Exam',slug:'the25/thyroid',keys:['thyroid','thyroid nodule','pemberton','thyroid palpation']},
+  {topic:'Lymph Node Exam',slug:'the25/lymph-node',keys:['lymph node','lymphadenopathy','cervical nodes','axillary nodes','inguinal nodes','supraclavicular','virchow']},
+  {topic:'Neck Vein Exam',slug:'the25/neck-veins',keys:['jvp','jugular venous','neck vein','hepatojugular','jvd','venous pressure','kussmaul']},
+  {topic:'Cardiac Second Sounds',slug:'the25/cardiac-second-sounds',keys:['s2','second heart sound','splitting','fixed splitting','paradoxical splitting','wide splitting','a2','p2']},
+  {topic:'Precordial Movements',slug:'the25/precordial-movements',keys:['precordial','pmi','point of maximal impulse','heave','lift','thrill','apical impulse']},
+  {topic:'Aortic Regurgitation',slug:'the25/aortic-regurgitation',keys:['aortic regurgitation','austin flint','duroziez','quincke','corrigan','hill sign','water hammer','de musset']},
+  {topic:'Diastolic Murmurs',slug:'the25/diastolic-murmurs',keys:['diastolic murmur','opening snap','rumble','graham steell','austin flint murmur','mitral stenosis murmur']},
+  {topic:'Ascites and Venous Patterns',slug:'the25/ascites',keys:['ascites','shifting dullness','fluid wave','puddle sign','caput medusae','venous pattern']},
+  {topic:'Fundoscopic Exam',slug:'the25/fundoscopic',keys:['fundoscop','ophthalmoscop','papilledema','retinal','cup to disc','cotton wool','av nicking','optic disc']},
+  {topic:'Pupillary Responses',slug:'the25/pupillary-responses',keys:['pupil','rapd','marcus gunn','swinging flashlight','afferent pupillary','anisocoria','accommodation','light reflex']},
+  {topic:'Tongue Exam',slug:'the25/tongue',keys:['tongue','glossitis','fasciculation tongue','macroglossia','geographic tongue']},
+  {topic:'Breast Exam',slug:'the25/breast',keys:['breast','cbe','clinical breast']},
+  {topic:'Pelvic Exam',slug:'the25/pelvic',keys:['pelvic','speculum','bimanual','cervical motion','chandelier sign']},
+  {topic:'Rectal Exam',slug:'the25/rectal',keys:['rectal','dre','digital rectal','prostate','guaiac','fecal occult']},
+  {topic:'Involuntary Movements and Tremor',slug:'the25/involuntary-movements',keys:['tremor','chorea','athetosis','dystonia','myoclonus','asterixis','tics','fasciculation','essential tremor','resting tremor','intention tremor']},
+  {topic:'Internal Capsule Stroke',slug:'the25/internal-capsule-stroke',keys:['internal capsule','pure motor','lacunar','capsular stroke','hemiparesis']},
+  {topic:'Ankle Brachial Index',slug:'the25/abi',keys:['ankle brachial','abi','peripheral arterial','pad screening']},
+  {topic:'Pulsus Paradoxus',slug:'the25/pulsus-paradoxus',keys:['pulsus paradoxus','tamponade','paradoxical pulse']},
+  {topic:'Newborn Jaundice',slug:'the25/newborn-jaundice',keys:['newborn jaundice','neonatal jaundice','kramer zones','bilirubin zones']},
+  {topic:'Liver Disease Head to Foot',slug:'the25/liver-disease',keys:['liver disease','spider angioma','palmar erythema','terry nails','gynecomastia','jaundice exam']},
+  {topic:'Shoulder Exam',slug:'the25/shoulder',keys:['supraspinatus','infraspinatus','subscapularis']},
+  {topic:'Parkinson\'s Exam',slug:'the25/parkinsons',keys:['parkinson','cogwheel','rigidity','bradykinesia','pill rolling','postural instability','festinating','masked facies']},
+  {topic:'Scleroderma Exam',slug:'the25/scleroderma',keys:['scleroderma','raynaud','sclerodactyly','calcinosis','telangiectasia','crest']},
+];
+
+function matchStanfordTopic(maneuverName){
+  const lower=maneuverName.toLowerCase();
+  let bestMatch=null,bestScore=0;
+  for(const t of STANFORD_TOPICS){
+    let score=0;
+    for(const key of t.keys){
+      if(lower.includes(key)||key.includes(lower)){
+        score+=key.length;
+      }
+    }
+    if(score>bestScore){bestScore=score;bestMatch=t;}
+  }
+  return bestMatch;
+}
+
 async function openManeuver(name){
   const overlay=document.getElementById('maneuver-overlay');
   const title=document.getElementById('maneuver-title');
   const body=document.getElementById('maneuver-body');
+  const stanfordSection=document.getElementById('maneuver-stanford');
+  const stanfordImages=document.getElementById('stanford-images');
+  const stanfordVideo=document.getElementById('stanford-video');
+  const stanfordLink=document.getElementById('stanford-link');
+
   title.textContent=name;
   overlay.classList.add('visible');
+  stanfordSection.style.display='none';
+  stanfordImages.innerHTML='';
+  stanfordVideo.innerHTML='';
+  stanfordLink.innerHTML='';
 
   if(maneuverCache[name]){
-    body.innerHTML=maneuverCache[name];
+    body.innerHTML=maneuverCache[name].claude;
+    if(maneuverCache[name].stanford) renderStanford(maneuverCache[name].stanford);
     return;
   }
 
   body.innerHTML='<div class="maneuver-loading"><div class="spinner"></div>Loading guide...</div>';
 
-  try{
-    const data=await callAPI({max_tokens:1500,messages:[{role:'user',content:`Give a concise, step-by-step guide for performing the "${name}" clinical maneuver/test.
+  // Run Claude + Stanford fetch in parallel
+  const stanfordTopic=matchStanfordTopic(name);
+  const claudePromise=callAPI({max_tokens:1500,messages:[{role:'user',content:`Give a concise, step-by-step guide for performing the "${name}" clinical maneuver/test.
 
 Format:
 **Indication:** one sentence
@@ -1046,12 +1125,83 @@ Format:
 **Clinical Pearl:** one practical tip
 
 Keep it concise and practical — written for a medical student about to perform this on a real patient.`}]});
+
+  let stanfordPromise=null;
+  if(stanfordTopic){
+    const stanfordUrl='https://stanfordmedicine25.stanford.edu/'+stanfordTopic.slug+'.html';
+    stanfordPromise=fetch(API_BASE+'/api/stanford-fetch',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url:stanfordUrl}),
+    }).then(r=>r.json()).catch(()=>null);
+  }
+
+  // Render Claude result
+  try{
+    const data=await claudePromise;
     const raw=data.content?.map(b=>b.text||'').join('')||'';
     const formatted=fmt(raw);
-    maneuverCache[name]=formatted;
     body.innerHTML=formatted;
+    maneuverCache[name]={claude:formatted,stanford:null};
   }catch(e){
     body.innerHTML='<span style="color:var(--red);">Error loading: '+e.message+'</span>';
+  }
+
+  // Render Stanford result
+  if(stanfordPromise){
+    try{
+      const stanford=await stanfordPromise;
+      if(stanford&&!stanford.error){
+        maneuverCache[name].stanford=stanford;
+        renderStanford(stanford);
+      }
+    }catch(e){console.error('Stanford fetch failed:',e);}
+  }
+}
+
+function renderStanford(data){
+  const section=document.getElementById('maneuver-stanford');
+  const imagesEl=document.getElementById('stanford-images');
+  const videoEl=document.getElementById('stanford-video');
+  const linkEl=document.getElementById('stanford-link');
+
+  section.style.display='block';
+  imagesEl.innerHTML='';
+  videoEl.innerHTML='';
+  linkEl.innerHTML='';
+
+  // Images
+  if(data.images&&data.images.length>0){
+    data.images.slice(0,6).forEach(img=>{
+      const imgEl=document.createElement('img');
+      imgEl.className='stanford-img';
+      imgEl.src=img.src;
+      imgEl.alt=img.alt||'Stanford Medicine 25';
+      imgEl.title=img.alt||'Click to enlarge';
+      imgEl.onclick=()=>window.open(img.src,'_blank');
+      imgEl.onerror=()=>imgEl.remove();
+      imagesEl.appendChild(imgEl);
+    });
+  }
+
+  // YouTube video
+  if(data.youtubeLinks&&data.youtubeLinks.length>0){
+    let ytUrl=data.youtubeLinks[0];
+    // Convert watch URLs to embed
+    if(ytUrl.includes('watch?v=')){
+      const vid=ytUrl.match(/[?&]v=([^&]+)/);
+      if(vid) ytUrl='https://www.youtube.com/embed/'+vid[1];
+    }
+    if(ytUrl.includes('/embed/')){
+      videoEl.innerHTML=`<iframe width="100%" height="280" src="${ytUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:8px;border:1px solid var(--border2);"></iframe>`;
+    }else{
+      videoEl.innerHTML=`<a href="${ytUrl}" target="_blank" class="stanford-link">▶ Watch video on YouTube</a>`;
+    }
+  }
+
+  // Link to full page
+  if(data.url){
+    linkEl.innerHTML=`<a href="${data.url}" target="_blank" class="stanford-link">📖 Full exam guide on Stanford Medicine 25 →</a>`;
   }
 }
 
