@@ -260,6 +260,28 @@
 </style>
 </head>
 <body>
+<div id="splash" style="position:fixed;inset:0;background:#eef7f5;z-index:9999;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+<div style="background:#fff;border:1px solid rgba(0,160,120,0.2);border-radius:16px;padding:32px;max-width:480px;width:100%;">
+<div style="font-family:monospace;font-size:18px;color:#008f65;margin-bottom:16px;">CHINWE</div>
+<div style="font-size:15px;font-weight:600;color:#0d2e26;margin-bottom:4px;">AI-powered clinical assistant for medical students</div>
+<div style="font-size:13px;color:#6b9e90;margin-bottom:20px;">Before you continue, please read and acknowledge the following.</div>
+<div style="background:#fff8f0;border:1px solid rgba(234,108,0,0.2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:12px;"><b style="color:#ea6c00;">NOT A CLINICAL TOOL</b><br>Chinwe is an AI educational aid. It will make mistakes. Always verify with your attending.</div>
+<div style="background:#fff0f0;border:1px solid rgba(229,57,53,0.2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:12px;"><b style="color:#e53935;">DE-IDENTIFY BEFORE YOU TYPE</b><br>Strip: Name, DOB, MRN, specific dates, address. Age, sex, vitals, labs, PMH, meds are fine.</div>
+<div style="background:#f0f7ff;border:1px solid rgba(29,111,164,0.2);border-radius:10px;padding:12px;margin-bottom:20px;font-size:12px;"><b style="color:#1d6fa4;">YOUR RESPONSIBILITY</b><br>You accept full responsibility for de-identification per HIPAA Safe Harbor.</div>
+<label style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;cursor:pointer;padding:10px;background:#f2faf8;border-radius:8px;">
+<input type="checkbox" id="ack-cb" onchange="handleAck(this)" style="width:18px;height:18px;margin-top:2px;accent-color:#00a878;cursor:pointer;flex-shrink:0;" />
+<span style="font-size:12px;color:#0d2e26;line-height:1.6;">I understand Chinwe is an AI educational tool. I will not enter real patient identifiers and accept responsibility for HIPAA compliance.</span>
+</label>
+<button id="enter-btn" onclick="enterApp()" style="width:100%;background:#00a878;color:#fff;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;font-family:inherit;opacity:0.4;cursor:not-allowed;">Start Chinwe</button>
+<div style="font-size:11px;color:#6b9e90;text-align:center;margin-top:10px;">Stored locally - won't show again on this device.</div>
+</div></div>
+<script>
+var splashReady=false;
+(function(){if(localStorage.getItem('chinwe_ack')==='1'){var s=document.getElementById('splash');if(s)s.style.display='none';}})();
+function handleAck(cb){splashReady=cb.checked;var btn=document.getElementById('enter-btn');btn.style.opacity=splashReady?'1':'0.4';btn.style.cursor=splashReady?'pointer':'not-allowed';}
+function enterApp(){if(splashReady){localStorage.setItem('chinwe_ack','1');document.getElementById('splash').style.display='none';switchTab('hx');}}
+</script>
+
 <div class="topbar">
   <div class="logo"><div class="logo-dot"></div>CHINWE</div>
   <div class="tab-bar">
