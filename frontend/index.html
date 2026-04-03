@@ -284,9 +284,9 @@ function enterApp(){if(splashReady){localStorage.setItem('chinwe_ack','1');docum
 function openSettings(){alert("Settings coming soon! Profile system will be added in the next update.");}
 </script>
 
-<div class="topbar">
+<div class="topbar" style="justify-content:space-between;">
   <div class="logo"><div class="logo-dot"></div>CHINWE</div>
-  <div class="tab-bar">
+  <div style="display:flex;align-items:center;gap:12px;"><button onclick="openSettings()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:500;color:#fff;cursor:pointer;white-space:nowrap;">⚙ Settings</button><div class="tab-bar">
     <div class="tab-group workflow">
       <button class="tab active" onclick="switchTab('hx')" id="tab-hx"><span class="tab-step"><span class="tab-step-num">1</span>H&amp;X Coach</span></button>
       <button class="tab" onclick="switchTab('present')" id="tab-present"><span class="tab-step"><span class="tab-step-num">2</span>Present</span></button>
@@ -298,7 +298,7 @@ function openSettings(){alert("Settings coming soon! Profile system will be adde
       <button class="tab" onclick="switchTab('guide')" id="tab-guide">Guidelines</button>
       <button class="tab study-tab" onclick="switchTab('study')" id="tab-study">Study Mode</button>
     </div>
-  </div>
+  </div></div>
 </div>
 
 <div class="clarify-overlay" id="clarify-overlay">
