@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chinwe — Maneuver Image Curation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{--bg:#eef7f5;--surface:#ffffff;--surface2:#f2faf8;--border:rgba(0,160,120,0.15);--border2:rgba(0,160,120,0.3);--accent:#00a878;--accent2:#008f65;--text:#0d2e26;--muted:#6b9e90;--muted2:#4a7a6c;--teal:#0097a7;--red:#e53935;--green:#16a34a;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:2px solid var(--border2);background:var(--accent);position:sticky;top:0;z-index:100;}
+  .logo{font-family:var(--mono);font-size:15px;font-weight:500;color:#fff;letter-spacing:0.1em;}
+  .topbar-right{display:flex;gap:10px;align-items:center;}
+  .topbar-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:500;color:#fff;cursor:pointer;font-family:var(--sans);}
+  .topbar-btn:hover{background:rgba(255,255,255,0.25);}
+
+  .main{max-width:900px;margin:0 auto;padding:24px 20px;}
+  h1{font-size:22px;font-weight:600;margin-bottom:4px;}
+  .subtitle{color:var(--muted2);font-size:13px;margin-bottom:24px;}
+
+  .region-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px;}
+  .region-tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted2);border:1.5px solid var(--border2);background:var(--surface);font-family:var(--sans);transition:all 0.15s;}
+  .region-tab:hover{border-color:var(--accent);color:var(--accent2);}
+  .region-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .region-tab .count{font-size:10px;opacity:0.7;margin-left:4px;}
+  .region-tab .done-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-left:4px;vertical-align:middle;}
+
+  .maneuver-list{display:flex;flex-direction:column;gap:16px;}
+  .maneuver-card{background:var(--surface);border:1.5px solid var(--border2);border-radius:12px;padding:20px;transition:border-color 0.15s;}
+  .maneuver-card.has-images{border-color:var(--green);}
+  .maneuver-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .maneuver-name{font-size:16px;font-weight:600;color:var(--text);}
+  .maneuver-status{font-size:11px;font-family:var(--mono);padding:3px 10px;border-radius:5px;}
+  .maneuver-status.done{background:rgba(22,163,74,0.1);color:var(--green);border:1px solid rgba(22,163,74,0.2);}
+  .maneuver-status.pending{background:rgba(0,151,167,0.1);color:var(--teal);border:1px solid rgba(0,151,167,0.2);}
+
+  .maneuver-images{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .maneuver-img-wrap{position:relative;display:inline-block;}
+  .maneuver-img{width:120px;height:90px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border2);}
+  .maneuver-img-rm{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+  .drop-zone{border:2px dashed var(--border2);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:var(--teal);background:rgba(0,151,167,0.05);}
+  .drop-zone-text{font-size:13px;color:var(--muted2);}
+  .drop-zone-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+  .save-btn{background:var(--teal);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:8px;transition:all 0.15s;}
+  .save-btn:hover{background:#007a8a;}
+  .save-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .save-status{font-size:11px;color:var(--muted);margin-left:10px;}
+
+  .progress-bar{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:12px 16px;margin-bottom:24px;display:flex;align-items:center;gap:12px;}
+  .progress-fill{height:8px;border-radius:4px;background:var(--green);transition:width 0.3s;}
+  .progress-track{flex:1;height:8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);}
+  .progress-text{font-size:12px;color:var(--muted2);font-family:var(--mono);white-space:nowrap;}
+
+  .stanford-ref{font-size:11px;color:var(--teal);margin-top:6px;}
+  .stanford-ref a{color:var(--teal);text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="logo">CHINWE — Image Curation</span>
+  <div class="topbar-right">
+    <button class="topbar-btn" onclick="window.location.href='index.html'">← Back to app</button>
+  </div>
+</div>
+
+<div class="main">
+  <h1>Maneuver Image Curation</h1>
+  <p class="subtitle">Go region by region. Drop images from Stanford Medicine 25 or your own files. Students only see what you approve here.</p>
+
+  <div class="progress-bar">
+    <span class="progress-text" id="progress-text">0 / 0 done</span>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="region-tabs" id="region-tabs"></div>
+  <div class="maneuver-list" id="maneuver-list"></div>
+</div>
+
+<script>
+const API_BASE=window.location.hostname==='localhost'?'http://localhost:3001':'https://chinwe-production.up.railway.app';
+
+const REGIONS={
+  'Shoulder':[
+    {name:'Hawkins test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Neer test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Empty Can test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Drop Arm test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Speed test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Yergason test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Apprehension test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Cross-body adduction test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'O\'Brien test',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+    {name:'Sulcus sign',stanford:'https://stanfordmedicine25.stanford.edu/the25/shoulder.html'},
+  ],
+  'Knee':[
+    {name:'McMurray test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+    {name:'Lachman test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+    {name:'Anterior drawer test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+    {name:'Posterior drawer test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+    {name:'Valgus stress test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+    {name:'Varus stress test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+    {name:'Patellar apprehension test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+    {name:'Thessaly test',stanford:'https://stanfordmedicine25.stanford.edu/the25/knee.html'},
+  ],
+  'Hip':[
+    {name:'FABER / Patrick test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hip.html'},
+    {name:'Trendelenburg test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hip.html'},
+    {name:'Thomas test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hip.html'},
+    {name:'Ober test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hip.html'},
+    {name:'Log roll test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hip.html'},
+    {name:'Piriformis test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hip.html'},
+  ],
+  'Low Back':[
+    {name:'Straight leg raise',stanford:'https://stanfordmedicine25.stanford.edu/the25/low-back.html'},
+    {name:'Crossed straight leg raise',stanford:'https://stanfordmedicine25.stanford.edu/the25/low-back.html'},
+    {name:'Schober test',stanford:'https://stanfordmedicine25.stanford.edu/the25/low-back.html'},
+    {name:'Sacroiliac joint compression',stanford:'https://stanfordmedicine25.stanford.edu/the25/low-back.html'},
+  ],
+  'Ankle & Foot':[
+    {name:'Thompson test',stanford:'https://stanfordmedicine25.stanford.edu/the25/ankle-and-foot.html'},
+    {name:'Anterior drawer (ankle)',stanford:'https://stanfordmedicine25.stanford.edu/the25/ankle-and-foot.html'},
+    {name:'Talar tilt test',stanford:'https://stanfordmedicine25.stanford.edu/the25/ankle-and-foot.html'},
+    {name:'Squeeze test',stanford:'https://stanfordmedicine25.stanford.edu/the25/ankle-and-foot.html'},
+  ],
+  'Hand & Wrist':[
+    {name:'Phalen test',stanford:'https://stanfordmedicine25.stanford.edu/the25/carpal-tunnel.html'},
+    {name:'Tinel sign (wrist)',stanford:'https://stanfordmedicine25.stanford.edu/the25/carpal-tunnel.html'},
+    {name:'Durkan test',stanford:'https://stanfordmedicine25.stanford.edu/the25/carpal-tunnel.html'},
+    {name:'Finkelstein test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hand.html'},
+    {name:'Froment sign',stanford:'https://stanfordmedicine25.stanford.edu/the25/hand.html'},
+    {name:'Allen test',stanford:'https://stanfordmedicine25.stanford.edu/the25/hand.html'},
+  ],
+  'Neuro':[
+    {name:'Romberg test',stanford:'https://stanfordmedicine25.stanford.edu/the25/cerebellar.html'},
+    {name:'Finger-to-nose test',stanford:'https://stanfordmedicine25.stanford.edu/the25/cerebellar.html'},
+    {name:'Heel-to-shin test',stanford:'https://stanfordmedicine25.stanford.edu/the25/cerebellar.html'},
+    {name:'Rapid alternating movements',stanford:'https://stanfordmedicine25.stanford.edu/the25/cerebellar.html'},
+    {name:'Babinski sign',stanford:'https://stanfordmedicine25.stanford.edu/the25/deep-tendon-reflexes.html'},
+    {name:'Hoffman sign',stanford:'https://stanfordmedicine25.stanford.edu/the25/deep-tendon-reflexes.html'},
+    {name:'Clonus',stanford:'https://stanfordmedicine25.stanford.edu/the25/deep-tendon-reflexes.html'},
+    {name:'RAPD / Swinging flashlight',stanford:'https://stanfordmedicine25.stanford.edu/the25/pupillary-responses.html'},
+  ],
+  'Cardiac':[
+    {name:'JVP assessment',stanford:'https://stanfordmedicine25.stanford.edu/the25/neck-veins.html'},
+    {name:'Hepatojugular reflux',stanford:'https://stanfordmedicine25.stanford.edu/the25/neck-veins.html'},
+    {name:'PMI palpation',stanford:'https://stanfordmedicine25.stanford.edu/the25/precordial-movements.html'},
+    {name:'S2 splitting assessment',stanford:'https://stanfordmedicine25.stanford.edu/the25/cardiac-second-sounds.html'},
+    {name:'Pulsus paradoxus',stanford:'https://stanfordmedicine25.stanford.edu/the25/pulsus-paradoxus.html'},
+  ],
+  'Pulmonary':[
+    {name:'Tactile fremitus',stanford:'https://stanfordmedicine25.stanford.edu/the25/pulmonary.html'},
+    {name:'Egophony',stanford:'https://stanfordmedicine25.stanford.edu/the25/pulmonary.html'},
+    {name:'Whispered pectoriloquy',stanford:'https://stanfordmedicine25.stanford.edu/the25/pulmonary.html'},
+    {name:'Diaphragm excursion',stanford:'https://stanfordmedicine25.stanford.edu/the25/pulmonary.html'},
+  ],
+  'Abdominal':[
+    {name:'Liver scratch test',stanford:'https://stanfordmedicine25.stanford.edu/the25/liver.html'},
+    {name:'Spleen percussion (Traube)',stanford:'https://stanfordmedicine25.stanford.edu/the25/spleen.html'},
+    {name:'Castell sign',stanford:'https://stanfordmedicine25.stanford.edu/the25/spleen.html'},
+    {name:'Shifting dullness',stanford:'https://stanfordmedicine25.stanford.edu/the25/ascites.html'},
+    {name:'Fluid wave test',stanford:'https://stanfordmedicine25.stanford.edu/the25/ascites.html'},
+    {name:'Murphy sign',stanford:''},
+    {name:'McBurney point tenderness',stanford:''},
+    {name:'Rovsing sign',stanford:''},
+    {name:'Psoas sign',stanford:''},
+    {name:'Obturator sign',stanford:''},
+  ],
+  'Thyroid & Neck':[
+    {name:'Thyroid palpation',stanford:'https://stanfordmedicine25.stanford.edu/the25/thyroid.html'},
+    {name:'Pemberton sign',stanford:'https://stanfordmedicine25.stanford.edu/the25/thyroid.html'},
+    {name:'Lymph node exam',stanford:'https://stanfordmedicine25.stanford.edu/the25/lymph-node.html'},
+  ],
+  'Vascular':[
+    {name:'Ankle-brachial index',stanford:'https://stanfordmedicine25.stanford.edu/the25/abi.html'},
+    {name:'Allen test (radial)',stanford:'https://stanfordmedicine25.stanford.edu/the25/hand.html'},
+    {name:'Buerger test',stanford:''},
+    {name:'Homan sign',stanford:''},
+  ],
+};
+
+let curatedData={};
+let currentRegion=null;
+let cardImages={};// maneuverName -> [{data,mime,caption}]
+
+async function init(){
+  // Load existing curated data
+  try{
+    const resp=await fetch(API_BASE+'/api/curated-images');
+    curatedData=await resp.json();
+  }catch(e){curatedData={};}
+
+  renderRegionTabs();
+  updateProgress();
+  // Auto-select first region
+  const firstRegion=Object.keys(REGIONS)[0];
+  selectRegion(firstRegion);
+}
+
+function renderRegionTabs(){
+  const container=document.getElementById('region-tabs');
+  container.innerHTML='';
+  Object.keys(REGIONS).forEach(region=>{
+    const maneuvers=REGIONS[region];
+    const doneCount=maneuvers.filter(m=>curatedData[m.name.toLowerCase().trim()]?.images?.length>0).length;
+    const allDone=doneCount===maneuvers.length;
+    const tab=document.createElement('button');
+    tab.className='region-tab'+(currentRegion===region?' active':'');
+    tab.innerHTML=`${region} <span class="count">${doneCount}/${maneuvers.length}</span>${allDone?'<span class="done-dot"></span>':''}`;
+    tab.onclick=()=>selectRegion(region);
+    container.appendChild(tab);
+  });
+}
+
+function selectRegion(region){
+  currentRegion=region;
+  renderRegionTabs();
+  renderManeuvers(region);
+}
+
+function renderManeuvers(region){
+  const container=document.getElementById('maneuver-list');
+  container.innerHTML='';
+  const maneuvers=REGIONS[region];
+
+  maneuvers.forEach(m=>{
+    const key=m.name.toLowerCase().trim();
+    const existing=curatedData[key]?.images||[];
+    cardImages[m.name]=existing.slice();// copy
+
+    const card=document.createElement('div');
+    card.className='maneuver-card'+(existing.length>0?' has-images':'');
+    card.id='card-'+key.replace(/[^a-z0-9]/g,'-');
+
+    let imgsHtml='';
+    existing.forEach((img,i)=>{
+      imgsHtml+=`<div class="maneuver-img-wrap" id="img-${key.replace(/[^a-z0-9]/g,'-')}-${i}">
+        <img class="maneuver-img" src="data:${img.mime};base64,${img.data}" />
+        <button class="maneuver-img-rm" onclick="removeCardImage('${m.name.replace(/'/g,"\\'")}',${i})">&times;</button>
+      </div>`;
+    });
+
+    const stanfordRef=m.stanford?`<div class="stanford-ref">Stanford ref: <a href="${m.stanford}" target="_blank">${m.stanford.split('/').pop().replace('.html','')}</a></div>`:'';
+
+    card.innerHTML=`
+      <div class="maneuver-card-header">
+        <span class="maneuver-name">${m.name}</span>
+        <span class="maneuver-status ${existing.length>0?'done':'pending'}" id="status-${key.replace(/[^a-z0-9]/g,'-')}">${existing.length>0?existing.length+' image'+(existing.length>1?'s':''):'needs images'}</span>
+      </div>
+      <div class="maneuver-images" id="images-${key.replace(/[^a-z0-9]/g,'-')}">${imgsHtml}</div>
+      <div class="drop-zone" id="drop-${key.replace(/[^a-z0-9]/g,'-')}"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event,'${m.name.replace(/'/g,"\\'")}')"
+        onclick="clickUpload('${m.name.replace(/'/g,"\\'")}')">
+        <div class="drop-zone-text">Drop images here or click to upload</div>
+        <div class="drop-zone-sub">Drag from Stanford page or your files</div>
+      </div>
+      ${stanfordRef}
+      <div style="display:flex;align-items:center;margin-top:10px;">
+        <button class="save-btn" onclick="saveCard('${m.name.replace(/'/g,"\\'")}')">Save</button>
+        <span class="save-status" id="save-status-${key.replace(/[^a-z0-9]/g,'-')}"></span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function handleDrop(e,maneuverName){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+
+  // Handle dropped files
+  const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
+  if(files.length>0){
+    files.forEach(f=>addImageFile(f,maneuverName));
+    return;
+  }
+
+  // Handle dropped image URLs (dragged from webpage)
+  const html=e.dataTransfer.getData('text/html');
+  const urlData=e.dataTransfer.getData('text/uri-list')||e.dataTransfer.getData('text/plain');
+
+  // Try to extract image src from HTML
+  const imgMatch=html?.match(/<img[^>]+src=["']([^"']+)["']/i);
+  if(imgMatch){
+    fetchAndAddImage(imgMatch[1],maneuverName);
+    return;
+  }
+
+  // Try plain URL
+  if(urlData&&(urlData.match(/\.(jpg|jpeg|png|gif|webp)/i)||urlData.startsWith('http'))){
+    fetchAndAddImage(urlData,maneuverName);
+  }
+}
+
+async function fetchAndAddImage(url,maneuverName){
+  const key=maneuverName.toLowerCase().trim().replace(/[^a-z0-9]/g,'-');
+  const statusEl=document.getElementById('save-status-'+key);
+  if(statusEl)statusEl.textContent='Loading image...';
+
+  try{
+    // Fetch through backend proxy to avoid CORS
+    const resp=await fetch(API_BASE+'/api/stanford-fetch',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url}),
+    });
+    // If that doesn't work for images, try direct fetch
+    const imgResp=await fetch(url);
+    const blob=await imgResp.blob();
+    addImageFile(blob,maneuverName);
+    if(statusEl)statusEl.textContent='';
+  }catch(e){
+    // Try direct
+    try{
+      const imgResp=await fetch(url,{mode:'no-cors'});
+      if(statusEl)statusEl.textContent='Could not load — try saving the image first, then uploading';
+    }catch(e2){
+      if(statusEl)statusEl.textContent='Could not load image — save it locally first';
+    }
+  }
+}
+
+function clickUpload(maneuverName){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='image/*';inp.multiple=true;
+  inp.onchange=(e)=>{
+    Array.from(e.target.files).forEach(f=>addImageFile(f,maneuverName));
+  };
+  inp.click();
+}
+
+function addImageFile(file,maneuverName){
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    const b64=ev.target.result.split(',')[1];
+    const mime=file.type||'image/jpeg';
+    if(!cardImages[maneuverName])cardImages[maneuverName]=[];
+    cardImages[maneuverName].push({data:b64,mime,caption:''});
+    refreshCardImages(maneuverName);
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeCardImage(maneuverName,idx){
+  if(!cardImages[maneuverName])return;
+  cardImages[maneuverName].splice(idx,1);
+  refreshCardImages(maneuverName);
+}
+
+function refreshCardImages(maneuverName){
+  const key=maneuverName.toLowerCase().trim().replace(/[^a-z0-9]/g,'-');
+  const container=document.getElementById('images-'+key);
+  if(!container)return;
+  container.innerHTML='';
+  (cardImages[maneuverName]||[]).forEach((img,i)=>{
+    container.innerHTML+=`<div class="maneuver-img-wrap" id="img-${key}-${i}">
+      <img class="maneuver-img" src="data:${img.mime};base64,${img.data}" />
+      <button class="maneuver-img-rm" onclick="removeCardImage('${maneuverName.replace(/'/g,"\\'")}',${i})">&times;</button>
+    </div>`;
+  });
+}
+
+async function saveCard(maneuverName){
+  const key=maneuverName.toLowerCase().trim().replace(/[^a-z0-9]/g,'-');
+  const statusEl=document.getElementById('save-status-'+key);
+  const images=cardImages[maneuverName]||[];
+
+  statusEl.textContent='Saving...';
+  try{
+    await fetch(API_BASE+'/api/curated-images',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({maneuver:maneuverName,images}),
+    });
+    curatedData[maneuverName.toLowerCase().trim()]={images,updated_at:new Date().toISOString()};
+    statusEl.textContent='Saved!';
+    setTimeout(()=>{statusEl.textContent='';},2000);
+
+    // Update card styling
+    const card=document.getElementById('card-'+key);
+    const status=document.getElementById('status-'+key);
+    if(images.length>0){
+      card?.classList.add('has-images');
+      if(status){status.className='maneuver-status done';status.textContent=images.length+' image'+(images.length>1?'s':'');}
+    }else{
+      card?.classList.remove('has-images');
+      if(status){status.className='maneuver-status pending';status.textContent='needs images';}
+    }
+    updateProgress();
+    renderRegionTabs();
+  }catch(e){
+    statusEl.textContent='Error: '+e.message;
+  }
+}
+
+function updateProgress(){
+  const allManeuvers=Object.values(REGIONS).flat();
+  const total=allManeuvers.length;
+  const done=allManeuvers.filter(m=>curatedData[m.name.toLowerCase().trim()]?.images?.length>0).length;
+  const pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('progress-text').textContent=`${done} / ${total} done`;
+  document.getElementById('progress-fill').style.width=pct+'%';
+}
+
+init();
+</script>
+</body>
+</html>
