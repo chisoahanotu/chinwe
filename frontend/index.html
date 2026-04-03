@@ -274,12 +274,14 @@
 </label>
 <button id="enter-btn" onclick="enterApp()" style="width:100%;background:#00a878;color:#fff;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;font-family:inherit;opacity:0.4;cursor:not-allowed;">Start Chinwe</button>
 <div style="font-size:11px;color:#6b9e90;text-align:center;margin-top:10px;">Stored locally - won't show again on this device.</div>
+<button onclick="openSettings()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:4px 12px;font-size:11px;color:#fff;cursor:pointer;" id="topbar-profile-name">Settings</button>
 </div></div>
 <script>
 var splashReady=false;
 (function(){if(localStorage.getItem('chinwe_ack')==='1'){var s=document.getElementById('splash');if(s)s.style.display='none';}})();
 function handleAck(cb){splashReady=cb.checked;var btn=document.getElementById('enter-btn');btn.style.opacity=splashReady?'1':'0.4';btn.style.cursor=splashReady?'pointer':'not-allowed';}
 function enterApp(){if(splashReady){localStorage.setItem('chinwe_ack','1');document.getElementById('splash').style.display='none';switchTab('hx');}}
+function openSettings(){alert("Settings coming soon! Profile system will be added in the next update.");}
 </script>
 
 <div class="topbar">
