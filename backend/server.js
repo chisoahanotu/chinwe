@@ -201,6 +201,87 @@ app.post('/api/stanford-fetch', async (req, res) => {
   }
 });
 
+// ── Image search for maneuver curation ──────────────────────────
+app.post('/api/search-images', async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ error: 'query required' });
+
+    const searchQuery = encodeURIComponent(query + ' physical exam maneuver');
+    // Fetch from Google Images via scraping
+    const response = await fetch(
+      `https://www.google.com/search?q=${searchQuery}&tbm=isch&safe=active`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html',
+        },
+        timeout: 10000,
+      }
+    );
+    const html = await response.text();
+
+    // Extract image URLs from Google Images results
+    const images = [];
+    // Google embeds image URLs in various formats
+    const patterns = [
+      /\["(https?:\/\/[^"]+\.(?:jpg|jpeg|png|gif|webp)[^"]*)",\d+,\d+\]/gi,
+      /ou":"(https?:\/\/[^"]+)"/gi,
+      /\["(https?:\/\/[^"]+)",\s*\d+,\s*\d+\s*\]/gi,
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(html)) !== null) {
+        const url = match[1];
+        if (url.includes('gstatic') || url.includes('google') || url.includes('favicon')) continue;
+        if (url.length > 500) continue;
+        if (!images.includes(url)) images.push(url);
+        if (images.length >= 15) break;
+      }
+      if (images.length >= 15) break;
+    }
+
+    // Also try data-src pattern
+    if (images.length < 5) {
+      const dataSrcRegex = /data-src="(https?:\/\/[^"]+)"/gi;
+      let match;
+      while ((match = dataSrcRegex.exec(html)) !== null) {
+        const url = match[1];
+        if (!url.includes('gstatic') && !images.includes(url)) images.push(url);
+        if (images.length >= 15) break;
+      }
+    }
+
+    res.json({ images: images.slice(0, 15), query });
+  } catch (err) {
+    console.error('Image search error:', err);
+    res.status(500).json({ error: 'Image search failed', details: err.message });
+  }
+});
+
+// Proxy an image URL to base64 (avoids CORS for dragging from search results)
+app.post('/api/proxy-image', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url || !url.startsWith('http')) return res.status(400).json({ error: 'Invalid URL' });
+
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+      timeout: 8000,
+    });
+    if (!response.ok) return res.status(response.status).json({ error: 'Fetch failed' });
+
+    const buffer = await response.buffer();
+    const mime = response.headers.get('content-type') || 'image/jpeg';
+    const b64 = buffer.toString('base64');
+
+    res.json({ data: b64, mime });
+  } catch (err) {
+    res.status(500).json({ error: 'Proxy failed', details: err.message });
+  }
+});
+
 // ── Image curation API ──────────────────────────────────────────
 // GET curated images for a maneuver
 app.get('/api/curated-images/:maneuver', (req, res) => {
