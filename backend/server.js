@@ -9,15 +9,16 @@ const PORT = process.env.PORT || 8080;
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(express.json({ limit: '20mb' }));
 
-const fs = require('fs');
-const path = require('path');
-const CURATED_PATH = path.join(__dirname, 'curated-images.json');
+const SUPABASE_URL = 'https://mfakknusrwdfsorimaha.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mYWtrbnVzcndkZnNvcmltYWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzNDQzMDQsImV4cCI6MjA5MDkyMDMwNH0.8CR1aQYvpb3XpyzQCyJ6_p1QPUJat_0Cc38dVQFU3iY';
 
-function loadCurated() {
-  try { return JSON.parse(fs.readFileSync(CURATED_PATH, 'utf8')); } catch { return {}; }
-}
-function saveCurated(data) {
-  fs.writeFileSync(CURATED_PATH, JSON.stringify(data, null, 2));
+function supaHeaders() {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+  };
 }
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
@@ -208,47 +209,50 @@ app.post('/api/search-images', async (req, res) => {
     if (!query) return res.status(400).json({ error: 'query required' });
 
     const searchQuery = encodeURIComponent(query + ' physical exam maneuver');
-    // Fetch from Google Images via scraping
+
+    // Try Bing Images
     const response = await fetch(
-      `https://www.google.com/search?q=${searchQuery}&tbm=isch&safe=active`,
+      `https://www.bing.com/images/search?q=${searchQuery}&form=HDRSC2&first=1`,
       {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html',
+          'Accept': 'text/html,application/xhtml+xml',
         },
         timeout: 10000,
       }
     );
     const html = await response.text();
 
-    // Extract image URLs from Google Images results
     const images = [];
-    // Google embeds image URLs in various formats
-    const patterns = [
-      /\["(https?:\/\/[^"]+\.(?:jpg|jpeg|png|gif|webp)[^"]*)",\d+,\d+\]/gi,
-      /ou":"(https?:\/\/[^"]+)"/gi,
-      /\["(https?:\/\/[^"]+)",\s*\d+,\s*\d+\s*\]/gi,
-    ];
 
-    for (const pattern of patterns) {
-      let match;
-      while ((match = pattern.exec(html)) !== null) {
-        const url = match[1];
-        if (url.includes('gstatic') || url.includes('google') || url.includes('favicon')) continue;
-        if (url.length > 500) continue;
-        if (!images.includes(url)) images.push(url);
-        if (images.length >= 15) break;
-      }
+    // Bing embeds image URLs in m= parameter as JSON
+    const mRegex = /murl&quot;:&quot;(https?:\/\/[^&]+?)&quot;/gi;
+    let match;
+    while ((match = mRegex.exec(html)) !== null) {
+      let url = match[1].replace(/&amp;/g, '&');
+      if (url.includes('bing.com') || url.includes('microsoft.com') || url.includes('favicon')) continue;
+      if (url.length > 600) continue;
+      if (!images.includes(url)) images.push(url);
       if (images.length >= 15) break;
     }
 
-    // Also try data-src pattern
-    if (images.length < 5) {
-      const dataSrcRegex = /data-src="(https?:\/\/[^"]+)"/gi;
-      let match;
-      while ((match = dataSrcRegex.exec(html)) !== null) {
+    // Fallback: try turl (thumbnail URLs)
+    if (images.length < 3) {
+      const turlRegex = /turl&quot;:&quot;(https?:\/\/[^&]+?)&quot;/gi;
+      while ((match = turlRegex.exec(html)) !== null) {
+        let url = match[1].replace(/&amp;/g, '&');
+        if (!images.includes(url)) images.push(url);
+        if (images.length >= 15) break;
+      }
+    }
+
+    // Fallback: src= in img tags
+    if (images.length < 3) {
+      const srcRegex = /src="(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/gi;
+      while ((match = srcRegex.exec(html)) !== null) {
         const url = match[1];
-        if (!url.includes('gstatic') && !images.includes(url)) images.push(url);
+        if (url.includes('bing.com') || url.includes('microsoft') || url.includes('favicon')) continue;
+        if (!images.includes(url)) images.push(url);
         if (images.length >= 15) break;
       }
     }
@@ -282,47 +286,77 @@ app.post('/api/proxy-image', async (req, res) => {
   }
 });
 
-// ── Image curation API ──────────────────────────────────────────
+// ── Image curation API (Supabase) ───────────────────────────────
 // GET curated images for a maneuver
-app.get('/api/curated-images/:maneuver', (req, res) => {
-  const curated = loadCurated();
-  const key = req.params.maneuver.toLowerCase().trim();
-  const entry = curated[key];
-  if (!entry) return res.json({ curated: false });
-  res.json({ curated: true, images: entry.images || [], approved: entry.approved || [], rejected: entry.rejected || [] });
+app.get('/api/curated-images/:maneuver', async (req, res) => {
+  try {
+    const key = req.params.maneuver.toLowerCase().trim();
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/curated_images?maneuver=eq.${encodeURIComponent(key)}&select=*&limit=1`,
+      { headers: supaHeaders() }
+    );
+    const rows = await resp.json();
+    if (!rows.length) return res.json({ curated: false });
+    const entry = rows[0];
+    res.json({ curated: true, images: entry.images || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// POST save curated images for a maneuver
-// body: { maneuver: "Hawkins test", images: [{data:"base64...",mime:"image/jpeg",caption:"..."}] }
-app.post('/api/curated-images', (req, res) => {
-  const { maneuver, images, approved, rejected } = req.body;
-  if (!maneuver) return res.status(400).json({ error: 'maneuver required' });
-  const curated = loadCurated();
-  const key = maneuver.toLowerCase().trim();
-  curated[key] = {
-    maneuver,
-    images: images || [],
-    approved: approved || [],
-    rejected: rejected || [],
-    updated_at: new Date().toISOString(),
-  };
-  saveCurated(curated);
-  res.json({ ok: true, maneuver: key, imageCount: (images || []).length });
+// POST save curated images for a maneuver (upsert)
+app.post('/api/curated-images', async (req, res) => {
+  try {
+    const { maneuver, images } = req.body;
+    if (!maneuver) return res.status(400).json({ error: 'maneuver required' });
+    const key = maneuver.toLowerCase().trim();
+
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/curated_images`,
+      {
+        method: 'POST',
+        headers: { ...supaHeaders(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify({ maneuver: key, images: images || [], updated_at: new Date().toISOString() }),
+      }
+    );
+    const data = await resp.json();
+    res.json({ ok: true, maneuver: key, imageCount: (images || []).length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET all curated maneuvers (admin overview)
-app.get('/api/curated-images', (req, res) => {
-  const curated = loadCurated();
-  res.json(curated);
+app.get('/api/curated-images', async (req, res) => {
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/curated_images?select=maneuver,images,updated_at&order=maneuver`,
+      { headers: supaHeaders() }
+    );
+    const rows = await resp.json();
+    // Convert to object keyed by maneuver name for compatibility
+    const result = {};
+    for (const row of rows) {
+      result[row.maneuver] = { images: row.images || [], updated_at: row.updated_at };
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// DELETE curation for a maneuver (reset to uncurated)
-app.delete('/api/curated-images/:maneuver', (req, res) => {
-  const curated = loadCurated();
-  const key = req.params.maneuver.toLowerCase().trim();
-  delete curated[key];
-  saveCurated(curated);
-  res.json({ ok: true, deleted: key });
+// DELETE curation for a maneuver
+app.delete('/api/curated-images/:maneuver', async (req, res) => {
+  try {
+    const key = req.params.maneuver.toLowerCase().trim();
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/curated_images?maneuver=eq.${encodeURIComponent(key)}`,
+      { method: 'DELETE', headers: supaHeaders() }
+    );
+    res.json({ ok: true, deleted: key });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => console.log(`Chinwe backend running on port ${PORT}`));
