@@ -833,7 +833,7 @@ let presentPath='real';
 let presentPhotoFiles=[];
 
 const SETTING_META={
-  'inpatient-rounds':{label:'Inpatient rounds',hint:'Concise overnight update. Lead with what changed, vitals trend, active issues, plan. Attendings expect brevity — aim for 2-3 min max.',expectation:'concise overnight update format: what changed, active problems, today\'s plan. Skip detailed HPI unless new issues. Attendings want efficiency.'},
+  'inpatient-rounds':{label:'Inpatient rounds',hint:'Concise overnight update. Lead with identifier one-liner, then overnight events, then systems. Attendings expect brevity — aim for 2-3 min max.',expectation:'morning rounds format: START with a brief identifying one-liner (name/age/sex/PMH/reason for admission — e.g. "Mr. Smith is a 68F with HTN, DM2, HFrEF admitted for acute decompensated heart failure"). Then overnight events (what happened overnight, interventions, patient response). Then vitals trends, focused exam changes, new labs/imaging, then A&P by problem. Skip full HPI — the team already knows the story.'},
   'inpatient-admission':{label:'Inpatient admission',hint:'Full presentation. Complete HPI, full ROS, PMH/SH/FH, detailed exam, all data, thorough A&P by problem.',expectation:'complete admission presentation: full HPI with chronology, complete pertinent ROS, PMH/meds/allergies/SH/FH, detailed exam, all labs and imaging, thorough problem-based A&P.'},
   'ed':{label:'Emergency department',hint:'Rapid and action-oriented. Lead with acuity. Pertinent positives and negatives only. Disposition-focused.',expectation:'rapid ED presentation: lead with chief complaint and acuity, pertinent positives/negatives only, relevant vitals and exam, key data, immediate assessment and disposition plan. No fluff.'},
   'outpatient':{label:'Outpatient clinic',hint:'Focused on the visit reason. Brief interval history, relevant chronic conditions, targeted exam, clear plan.',expectation:'focused outpatient presentation: reason for visit, brief relevant history, pertinent chronic conditions, targeted exam findings, focused A&P. Not an admission H&P.'},
@@ -995,15 +995,19 @@ async function callClaude(system,messages,bodyId,errorId,btnId){
 }
 function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>').replace(/\n/g,'<br>');}
 function fmtPresentation(t){
-  // Split into sections by bold headers or markdown headers
   const html=t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
-  // Split on double newlines to get paragraphs
   const blocks=html.split(/\n\n+/);
   if(blocks.length<=1) return '<div>'+html.replace(/\n/g,'<br>')+'</div>';
-  // First block is typically the one-liner
-  const oneLiner='<div class="one-liner">'+blocks[0].replace(/\n/g,'<br>')+'</div>';
-  const rest=blocks.slice(1).map(b=>'<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>').join('');
-  return oneLiner+rest;
+  // First two blocks span full width (identifier + overnight events)
+  const fullWidthCount=Math.min(2,blocks.length);
+  let result='';
+  for(let i=0;i<fullWidthCount;i++){
+    result+='<div class="one-liner">'+blocks[i].replace(/\n/g,'<br>')+'</div>';
+  }
+  for(let i=fullWidthCount;i<blocks.length;i++){
+    result+='<div class="section-block">'+blocks[i].replace(/\n/g,'<br>')+'</div>';
+  }
+  return result;
 }
 function simple(sys,txt,bid,eid,btnid){return callClaude(sys,[{role:'user',content:txt}],bid,eid,btnid);}
 
