@@ -1007,17 +1007,27 @@ Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JS
 
 Required structure: {"sections":[...]} where sections is an array of 7 objects with titles: "Onset & Character", "Associated Symptoms", "PMH & Risk Factors", "Medications & Social History", "Physical Exam", "Red Flags", "Attending Pearls".
 
-Each section has "title" (string) and "items" (array). Each item has:
-- "text": string (shorthand name, no question marks)
-- "highYield": boolean
-- "rationale": string (1 detailed sentence — MUST name specific clinical tests by name when relevant, e.g. "Hawkins and Neer tests assess subacromial impingement; Empty Can test isolates supraspinatus." Never be vague.)
-- "maneuvers": array of strings listing any named tests/signs/maneuvers mentioned in text or rationale (e.g. ["Hawkins test","Neer test"]). Empty array [] if none.
+Each item: {"text":"...","highYield":bool,"rationale":"...","maneuvers":[]}
 
-Rules:
+CRITICAL RULES FOR TEXT FIELD:
+- "text" must be a SPECIFIC clinical question or action the student should ask/do — NOT a vague category
+- BAD: "Chest pain onset" — this is a category label, not a question
+- GOOD: "When exactly did it start, and what were you doing?" — this is what you actually say to the patient
+- BAD: "Quality / character" — vague category
+- GOOD: "Is it pressure, sharp, squeezing, or burning?" — specific differentiating question
+- BAD: "Associated symptoms" — useless
+- GOOD: "Any nausea, diaphoresis, dyspnea, or radiation to jaw/arm/back?" — targeted ROS
+- For Physical Exam: "text" should be the specific maneuver or exam action, not "cardiovascular exam"
+- Each item should teach the student WHAT TO SAY or WHAT TO DO, not just what topic to cover
+
+RATIONALE: 1 sentence explaining WHY this question matters diagnostically. Name specific tests/maneuvers when relevant.
+MANEUVERS: array of named clinical tests mentioned in text or rationale. Empty [] if none.
+
+Other rules:
 - 3-4 items per section, 1-2 highYield per section
-- Physical Exam items MUST name exact tests to perform in the rationale
+- Do NOT repeat anything from chart context
 - Attending Pearls: full teaching sentences, rationale can be empty string
-- For returning patients: focus on complaint-specific questions and interval changes, skip comprehensive intake${chartRule}`;
+- For returning patients: skip comprehensive intake, focus on complaint${chartRule}`;
   try{
     const raw=await callGemini(prompt);
     let parsed;try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}catch(jsonErr){const match=raw.match(/\{[\s\S]*\}/);if(match){parsed=JSON.parse(match[0]);}else{throw jsonErr;}}
