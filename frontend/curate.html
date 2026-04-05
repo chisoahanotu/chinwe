@@ -310,25 +310,12 @@ async function fetchAndAddImage(url,maneuverName){
   if(statusEl)statusEl.textContent='Loading image...';
 
   try{
-    // Fetch through backend proxy to avoid CORS
-    const resp=await fetch(API_BASE+'/api/stanford-fetch',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url}),
-    });
-    // If that doesn't work for images, try direct fetch
     const imgResp=await fetch(url);
     const blob=await imgResp.blob();
     addImageFile(blob,maneuverName);
     if(statusEl)statusEl.textContent='';
   }catch(e){
-    // Try direct
-    try{
-      const imgResp=await fetch(url,{mode:'no-cors'});
-      if(statusEl)statusEl.textContent='Could not load — try saving the image first, then uploading';
-    }catch(e2){
-      if(statusEl)statusEl.textContent='Could not load image — save it locally first';
-    }
+    if(statusEl)statusEl.textContent='Could not load image — save it locally first';
   }
 }
 
