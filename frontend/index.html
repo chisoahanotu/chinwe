@@ -689,7 +689,10 @@ function renderAcronymList(){
           </div>
         </div>
       </div>
-      <button class="run-btn" id="note-btn" onclick="runNote()"><div class="spinner"></div><span class="btn-text">Generate Note ↗</span></button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="run-btn" id="note-btn" onclick="runNote()" style="margin-top:0;"><div class="spinner"></div><span class="btn-text">Generate Note ↗</span></button>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted2);"><input type="checkbox" id="skip-clarify" style="accent-color:var(--accent);width:14px;height:14px;" /><span>Skip clarify questions (faster)</span></label>
+      </div>
       <div class="error-text" id="note-error"></div>
     </div>
     <div class="response-section" id="note-response">
@@ -1264,6 +1267,12 @@ async function runNote(){
   document.getElementById('inline-study').classList.remove('visible');document.getElementById('test-btn').classList.remove('visible');document.getElementById('ai-assist-bar').classList.remove('visible');document.getElementById('ai-assist-result').classList.remove('visible');document.getElementById('ai-assist-result').innerHTML='';
   const hpi=document.getElementById('note-hpi').value.trim();if(!hpi){errorEl.textContent='HPI required.';return;}pendingNoteParams={mode:'type'};
   const btn=document.getElementById('note-btn');btn.classList.add('loading');btn.disabled=true;
+  const skipClarify=document.getElementById('skip-clarify')?.checked;
+  if(skipClarify){
+    await generateNote({});
+    btn.classList.remove('loading');btn.disabled=false;
+    return;
+  }
   try{
     let sc='';{const hpi=document.getElementById('note-hpi').value.trim(),vitals=document.getElementById('note-vitals').value.trim(),exam=document.getElementById('note-exam').value.trim(),ap=document.getElementById('note-ap').value.trim();sc=`HPI: ${hpi}${vitals?'\nVitals: '+vitals:''}${exam?'\nExam: '+exam:''}${ap?'\nA&P: '+ap:''}`;}
     const data=await callAPI({messages:[{role:'user',content:`Review this medical student note. Identify 2-3 questions that would meaningfully improve it.\n\nNote:\n${sc}\n\nReturn ONLY JSON: {"questions":[{"text":"...","type":"options","options":["...","..."]}]}\nTypes: options or text. Max 3. If comprehensive, return {"questions":[]}`}]});
