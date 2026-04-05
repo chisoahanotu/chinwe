@@ -56,6 +56,7 @@
   .run-btn.loading .spinner { display: block; }
   .run-btn.loading .btn-text { display: none; }
   @keyframes spin { to{transform:rotate(360deg)} }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
   .response-section { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 18px; display: none; box-shadow: 0 1px 4px rgba(0,120,90,0.06); }
   .response-section.visible { display: block; }
   .response-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
@@ -932,6 +933,18 @@ function fillDDx(t){const m={chest:{age:'58M',cc:'chest pain',onset:'acute (<24h
 function fillGuide(t){const m={htn:{q:'management of hypertension',specialty:'ACC/AHA (cardiology)'},dm:{q:'T2DM glycemic targets and first-line therapy',specialty:'ADA (diabetes)'},afib:{q:'anticoagulation in atrial fibrillation',specialty:'ACC/AHA (cardiology)'},ckd:{q:'CKD staging, monitoring, and management',specialty:'any'},sepsis:{q:'sepsis-3 definition, workup, and Hour-1 bundle',specialty:'ATS/ERS (pulm/critical care)'},pe:{q:'pulmonary embolism diagnosis and treatment',specialty:'ACC/AHA (cardiology)'}};const d=m[t];if(!d)return;document.getElementById('guide-q').value=d.q;document.getElementById('guide-specialty').value=d.specialty;}
 
 async function callAPI(body){const resp=await fetch(`${API_BASE}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}return resp.json();}
+async function streamToElement(body,el){
+  el.innerHTML='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:1px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
+  const resp=await fetch(`${API_BASE}/api/chat/stream`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
+  const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='',full='';
+  while(true){let done,value;try{const r=await reader.read();done=r.done;value=r.value;}catch(e){break;}if(done)break;
+    buf+=decoder.decode(value,{stream:true});const parts=buf.split('\n\n');buf=parts.pop();
+    for(const part of parts){for(const line of part.split('\n')){const t=line.trim();if(!t.startsWith('data:'))continue;const raw=t.slice(5).trim();if(!raw||raw==='[DONE]')continue;try{const ev=JSON.parse(raw);if(ev&&typeof ev.text==='string'){full+=ev.text;try{el.innerHTML=fmt(full);}catch(fe){el.textContent=full;}}}catch(e){}}}
+  }
+  if(full){try{el.innerHTML=fmt(full);}catch(fe){el.textContent=full;}}
+  return full;
+}
 async function callClaude(system,messages,bodyId,errorId,btnId){
   const btn=document.getElementById(btnId),errorEl=document.getElementById(errorId),bodyEl=document.getElementById(bodyId),section=document.getElementById(bodyId.replace('-body','-response'));
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
@@ -980,7 +993,7 @@ Rules:
 - Attending Pearls: full teaching sentences, rationale can be empty string
 - If chart context given, tailor to this patient`;
   try{
-    const data=await callAPI({max_tokens:6000,messages:[{role:'user',content:prompt}]});
+    const data=await callAPI({model:'claude-haiku-4-5-20251001',max_tokens:3000,messages:[{role:'user',content:prompt}]});
     const raw=data.content?.map(b=>b.text||'').join('')||'';
     let parsed;try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}catch(jsonErr){const match=raw.match(/\{[\s\S]*\}/);if(match){parsed=JSON.parse(match[0]);}else{throw jsonErr;}}
     renderHxOutput(parsed);
@@ -1051,8 +1064,13 @@ async function openManeuver(name){
 
   body.innerHTML='<div class="maneuver-loading"><div class="spinner"></div>Loading guide...</div>';
 
-  // Run Claude guide + curated data fetch in parallel
-  const claudePromise=callAPI({max_tokens:1500,messages:[{role:'user',content:`Give a concise, step-by-step guide for performing the "${name}" clinical maneuver/test.
+  // Start curated data fetch immediately
+  const curatedPromise=fetch(API_BASE+'/api/curated-images/'+encodeURIComponent(name.toLowerCase().trim()))
+    .then(r=>r.json()).catch(()=>({curated:false}));
+
+  // Stream Claude guide into the modal body
+  try{
+    const fullText=await streamToElement({model:'claude-haiku-4-5-20251001',max_tokens:1500,messages:[{role:'user',content:`Give a concise, step-by-step guide for performing the "${name}" clinical maneuver/test.
 
 Format:
 **Indication:** one sentence
@@ -1067,18 +1085,8 @@ Format:
 
 Keep it concise and practical — written for a medical student about to perform this on a real patient.
 
-**Clinical Pearl:** one practical tip (put this last)`}]});
-
-  const curatedPromise=fetch(API_BASE+'/api/curated-images/'+encodeURIComponent(name.toLowerCase().trim()))
-    .then(r=>r.json()).catch(()=>({curated:false}));
-
-  // Render Claude result
-  try{
-    const data=await claudePromise;
-    const raw=data.content?.map(b=>b.text||'').join('')||'';
-    const formatted=fmt(raw);
-    body.innerHTML=formatted;
-    maneuverCache[name]={claude:formatted,curated:null};
+**Clinical Pearl:** one practical tip (put this last)`}]},body);
+    maneuverCache[name]={claude:body.innerHTML,curated:null};
   }catch(e){
     body.innerHTML='<span style="color:var(--red);">Error loading: '+e.message+'</span>';
   }
@@ -1279,7 +1287,7 @@ async function generateNote(clarifyAnswers){
 async function runAiAssist(){
   const btn=document.getElementById('ai-assist-btn'),result=document.getElementById('ai-assist-result');
   btn.classList.add('loading');btn.disabled=true;result.classList.remove('visible');result.innerHTML='';
-  try{const data=await callAPI({messages:[{role:'user',content:`Review this medical student note. Focus on Assessment and Plan.\n\nNote:\n${lastNoteText.substring(0,2500)}\n\nBrief high-value feedback:\n1. **Possible additions**\n2. **Things to reconsider**\n3. **Documentation gaps**\n\n3-6 bullet points total.`}]});const text=data.content?.map(b=>b.text||'').join('')||'';result.innerHTML=fmt(text);result.classList.add('visible');}
+  try{result.classList.add('visible');await streamToElement({messages:[{role:'user',content:`Review this medical student note. Focus on Assessment and Plan.\n\nNote:\n${lastNoteText.substring(0,2500)}\n\nBrief high-value feedback:\n1. **Possible additions**\n2. **Things to reconsider**\n3. **Documentation gaps**\n\n3-6 bullet points total.`}]},result);}
   catch(e){result.innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;result.classList.add('visible');}
   finally{btn.classList.remove('loading');btn.disabled=false;}
 }
