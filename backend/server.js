@@ -228,6 +228,35 @@ app.post('/api/stanford-fetch', async (req, res) => {
   }
 });
 
+// ── Hx Coach cache ─────────────────────────────────────────────
+app.get('/api/hx-cache/:key', async (req, res) => {
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/hx_cache?cache_key=eq.${encodeURIComponent(req.params.key)}&select=result&limit=1`,
+      { headers: supaHeaders() }
+    );
+    const rows = await resp.json();
+    if (!rows.length) return res.json({ cached: false });
+    res.json({ cached: true, result: rows[0].result });
+  } catch (err) {
+    res.json({ cached: false });
+  }
+});
+
+app.post('/api/hx-cache', async (req, res) => {
+  try {
+    const { cache_key, complaint, age_bracket, sex, visit_type, result } = req.body;
+    await fetch(`${SUPABASE_URL}/rest/v1/hx_cache`, {
+      method: 'POST',
+      headers: { ...supaHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ cache_key, complaint, age_bracket, sex, visit_type: visit_type || 'returning', result }),
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    res.json({ ok: false });
+  }
+});
+
 // ── Image search for maneuver curation ──────────────────────────
 app.post('/api/search-images', async (req, res) => {
   try {
