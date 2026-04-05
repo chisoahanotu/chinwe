@@ -1015,28 +1015,7 @@ TEXT RULES — coaching a medical student, not scripting patient questions:
 MANEUVERS: array of named clinical tests. Empty [] if none.
 3-4 items per section, 1-2 highYield.`;
 
-  // Show all section headers immediately as loading placeholders
-  const sectionTitles=['Onset & Character','Associated Symptoms','PMH & Risk Factors','Medications & Social History','Physical Exam','Red Flags'];
-  if(isNewPatient&&age) sectionTitles.push('Age-Appropriate Screening');
-  sectionTitles.push('Attending Pearls');
-
-  output.innerHTML='';
-  sectionTitles.forEach(title=>{
-    const secEl=document.createElement('div');secEl.className='hx-section';secEl.id='hx-sec-'+title.replace(/[^a-zA-Z]/g,'');
-    const header=document.createElement('div');header.className='hx-section-header';
-    header.innerHTML=`<span class="hx-section-title">${title}</span><span class="hx-section-arrow">&#9662;</span>`;
-    header.onclick=()=>secEl.classList.toggle('open');
-    const body=document.createElement('div');body.className='hx-section-body';
-    body.innerHTML='<div style="padding:8px;color:var(--muted);font-size:12px;"><span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span>Loading...</div>';
-    secEl.appendChild(header);secEl.appendChild(body);
-    output.appendChild(secEl);
-  });
-
-  // Add screening immediately (client-side, no API needed)
-  if(isNewPatient&&age){
-    const screening=buildScreeningSection(age);
-    if(screening) populateSection('Age-Appropriate Screening',screening.items,false);
-  }
+  output.innerHTML='<span style="color:var(--muted);font-size:13px;">Generating...</span>';
 
   // Shared Sonnet prompt — generates BOTH items and rationales
   const sharedSonnet=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
@@ -1085,6 +1064,11 @@ MANEUVERS: array of named clinical tests. Empty [] if none.
   });
 
   Promise.all(allPromises).then(()=>{
+    // Add screening after all sections populated (client-side, instant)
+    if(isNewPatient&&age){
+      const screening=buildScreeningSection(age);
+      if(screening) populateSection('Age-Appropriate Screening',screening.items,false);
+    }
     btn.classList.remove('loading');btn.disabled=false;
   }).catch(e=>{
     errorEl.textContent='Error: '+e.message;
@@ -1120,8 +1104,33 @@ let hxItemCounter=0;
 
 function populateSection(title,items,showWhyAsk){
   const secId='hx-sec-'+title.replace(/[^a-zA-Z]/g,'');
-  const secEl=document.getElementById(secId);
-  if(!secEl)return;
+  let secEl=document.getElementById(secId);
+  const container=document.getElementById('hx-output');
+
+  // Clear "Generating..." placeholder on first section
+  if(container.querySelector(':scope > span')){container.innerHTML='';}
+
+  // Create section if it doesn't exist
+  if(!secEl){
+    secEl=document.createElement('div');secEl.className='hx-section';secEl.id=secId;
+    const header=document.createElement('div');header.className='hx-section-header';
+    header.innerHTML=`<span class="hx-section-title">${title}</span><span class="hx-section-arrow">&#9662;</span>`;
+    header.onclick=()=>secEl.classList.toggle('open');
+    const body=document.createElement('div');body.className='hx-section-body';
+    secEl.appendChild(header);secEl.appendChild(body);
+
+    // Insert in correct order
+    const sectionOrder=['Onset & Character','Associated Symptoms','PMH & Risk Factors','Medications & Social History','Physical Exam','Red Flags','Age-Appropriate Screening','Attending Pearls'];
+    const myIdx=sectionOrder.indexOf(title);
+    let inserted=false;
+    for(const child of container.children){
+      const childTitle=child.querySelector('.hx-section-title')?.textContent||'';
+      const childIdx=sectionOrder.indexOf(childTitle);
+      if(childIdx>myIdx){container.insertBefore(secEl,child);inserted=true;break;}
+    }
+    if(!inserted)container.appendChild(secEl);
+  }
+
   const body=secEl.querySelector('.hx-section-body');
   if(!body)return;
 
