@@ -1505,19 +1505,33 @@ async function runGenerate(){
   const isRounds=settingLabel.toLowerCase().includes('rounds');
   const sharedContext=`You are an expert clinical educator coaching a ${level} student for a ${settingLabel} presentation.\nPatient data:\n${patient}`;
 
-  // Build the layout shell
+  // Show progress bar
+  const estTime=10;// estimated seconds
+  const startTime=Date.now();
   bodyEl.innerHTML=`
-    <div class="one-liner" id="pres-oneliner"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>
-    ${isRounds?'<div class="one-liner" id="pres-overnight"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>':''}
-    <div class="pres-columns">
-      <div class="pres-col" id="pres-left"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>
-      <div class="pres-col" id="pres-right"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;padding:30px 0;">
+      <div style="font-size:13px;color:var(--muted2);margin-bottom:12px;" id="pres-progress-label">Generating presentation...</div>
+      <div style="width:80%;max-width:320px;height:6px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;">
+        <div id="pres-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:3px;transition:width 0.3s;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="pres-progress-time">0s</div>
     </div>`;
 
-  const oneLinerEl=document.getElementById('pres-oneliner');
-  const overnightEl=document.getElementById('pres-overnight');
-  const leftEl=document.getElementById('pres-left');
-  const rightEl=document.getElementById('pres-right');
+  const progressBar=document.getElementById('pres-progress-bar');
+  const progressTime=document.getElementById('pres-progress-time');
+  const progressLabel=document.getElementById('pres-progress-label');
+  let leftDone=false,rightDone=false;
+  const progressInterval=setInterval(()=>{
+    const elapsed=(Date.now()-startTime)/1000;
+    const leftPct=leftDone?50:Math.min(48,elapsed/estTime*50);
+    const rightPct=rightDone?50:Math.min(48,elapsed/estTime*50);
+    const totalPct=Math.round(leftPct+rightPct);
+    progressBar.style.width=totalPct+'%';
+    progressTime.textContent=Math.round(elapsed)+'s';
+    if(leftDone&&!rightDone)progressLabel.textContent='Generating assessment & plan...';
+    else if(!leftDone&&rightDone)progressLabel.textContent='Generating clinical data...';
+    else if(leftDone&&rightDone)progressLabel.textContent='Done!';
+  },300);
 
   // Call 1: One-liner + overnight (if rounds) + vitals/exam/labs (left column)
   const leftPrompt=isRounds
@@ -1537,58 +1551,56 @@ async function runGenerate(){
     body:JSON.stringify({system:`Expert clinical educator for ${level} students.`,messages:[{role:'user',content:rightPrompt}]}),
   });
 
-  // Stream left side
-  async function streamSide(respPromise,onChunk){
+  // Collect text silently (no streaming render), show progress bar instead
+  async function collectStream(respPromise){
     const resp=await respPromise;
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
-    const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='',full='',lastRender='';
+    const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='',full='';
     while(true){
       let done,value;try{const r=await reader.read();done=r.done;value=r.value;}catch(e){break;}if(done)break;
       buf+=decoder.decode(value,{stream:true});const parts=buf.split('\n\n');buf=parts.pop();
       for(const part of parts){for(const line of part.split('\n')){const t=line.trim();if(!t.startsWith('data:'))continue;const raw=t.slice(5).trim();if(!raw||raw==='[DONE]')continue;try{const ev=JSON.parse(raw);if(ev&&typeof ev.text==='string')full+=ev.text;}catch(e){}}}
-      const newlines=full.split('\n').length;const lastNewlines=lastRender.split('\n').length;
-      if(newlines>lastNewlines||full.length-lastRender.length>150){lastRender=full;onChunk(full,false);}
     }
-    onChunk(full,true);
     return full;
   }
 
-  let leftText='',rightText='';
-
-  const leftStream=streamSide(leftPromise,(text,final)=>{
-    leftText=text;
-    const fmted=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
-    const blocks=fmted.split(/\n\n+/);
-    // First block = one-liner
-    if(blocks[0])oneLinerEl.innerHTML=blocks[0].replace(/\n/g,'<br>');
-    // For rounds: second block = overnight
-    let dataStart=1;
-    if(isRounds&&blocks.length>1){
-      const lower=blocks[1].toLowerCase();
-      if(lower.includes('overnight')||lower.includes('event')||lower.includes('hospital day')||dataStart===1){
-        if(overnightEl)overnightEl.innerHTML=blocks[1].replace(/\n/g,'<br>');
-        dataStart=2;
-      }
-    }
-    // Rest = left column data
-    const dataBlocks=blocks.slice(dataStart);
-    leftEl.innerHTML=dataBlocks.map(b=>'<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>').join('');
-    if(!final)leftEl.innerHTML+='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
-  });
-
-  const rightStream=streamSide(rightPromise,(text,final)=>{
-    rightText=text;
-    const fmted=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
-    rightEl.innerHTML=fmted.replace(/\n\n+/g,'<br><br>').replace(/\n/g,'<br>');
-    if(!final)rightEl.innerHTML+='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
-  });
-
   try{
-    await Promise.all([leftStream,rightStream]);
-    // Store combined text for sendToNote and other features
-    const combined=leftText+'\n\n'+rightText;
-    bodyEl.dataset.fullText=combined;
+    const [leftText,rightText]=await Promise.all([
+      collectStream(leftPromise).then(t=>{leftDone=true;return t;}),
+      collectStream(rightPromise).then(t=>{rightDone=true;return t;}),
+    ]);
+
+    clearInterval(progressInterval);
+
+    // Render final layout
+    const fmtBlock=t=>t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
+    const leftFmt=fmtBlock(leftText);
+    const rightFmt=fmtBlock(rightText);
+    const leftBlocks=leftFmt.split(/\n\n+/);
+
+    let html='';
+    // One-liner (full width)
+    if(leftBlocks[0]) html+='<div class="one-liner">'+leftBlocks[0].replace(/\n/g,'<br>')+'</div>';
+
+    // Overnight events (full width, rounds only)
+    let dataStart=1;
+    if(isRounds&&leftBlocks.length>1){
+      html+='<div class="one-liner">'+leftBlocks[1].replace(/\n/g,'<br>')+'</div>';
+      dataStart=2;
+    }
+
+    // Columns
+    const dataBlocks=leftBlocks.slice(dataStart);
+    html+='<div class="pres-columns"><div class="pres-col">';
+    dataBlocks.forEach(b=>{html+='<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>';});
+    html+='</div><div class="pres-col">';
+    html+=rightFmt.replace(/\n\n+/g,'<br><br>').replace(/\n/g,'<br>');
+    html+='</div></div>';
+
+    bodyEl.innerHTML=html;
+    bodyEl.dataset.fullText=leftText+'\n\n'+rightText;
   }catch(e){
+    clearInterval(progressInterval);
     errorEl.textContent='Error: '+e.message;
   }
   btn.classList.remove('loading');btn.disabled=false;
