@@ -936,6 +936,13 @@ function fillDDx(t){const m={chest:{age:'58M',cc:'chest pain',onset:'acute (<24h
 function fillGuide(t){const m={htn:{q:'management of hypertension',specialty:'ACC/AHA (cardiology)'},dm:{q:'T2DM glycemic targets and first-line therapy',specialty:'ADA (diabetes)'},afib:{q:'anticoagulation in atrial fibrillation',specialty:'ACC/AHA (cardiology)'},ckd:{q:'CKD staging, monitoring, and management',specialty:'any'},sepsis:{q:'sepsis-3 definition, workup, and Hour-1 bundle',specialty:'ATS/ERS (pulm/critical care)'},pe:{q:'pulmonary embolism diagnosis and treatment',specialty:'ACC/AHA (cardiology)'}};const d=m[t];if(!d)return;document.getElementById('guide-q').value=d.q;document.getElementById('guide-specialty').value=d.specialty;}
 
 async function callAPI(body){const resp=await fetch(`${API_BASE}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}return resp.json();}
+async function callGemini(prompt,model){
+  const resp=await fetch(`${API_BASE}/api/gemini`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model||'gemini-2.5-flash-lite',contents:[{parts:[{text:prompt}]}]})});
+  if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
+  const data=await resp.json();
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  return text;
+}
 async function streamToElement(body,el){
   el.innerHTML='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:1px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
   const resp=await fetch(`${API_BASE}/api/chat/stream`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -1002,8 +1009,7 @@ Rules:
 - Attending Pearls: full teaching sentences, rationale can be empty string
 - If chart context given, tailor to this patient`;
   try{
-    const data=await callAPI({model:'claude-haiku-4-5-20251001',max_tokens:3000,messages:[{role:'user',content:prompt}]});
-    const raw=data.content?.map(b=>b.text||'').join('')||'';
+    const raw=await callGemini(prompt);
     let parsed;try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}catch(jsonErr){const match=raw.match(/\{[\s\S]*\}/);if(match){parsed=JSON.parse(match[0]);}else{throw jsonErr;}}
     renderHxOutput(parsed);
   }catch(e){errorEl.textContent='Error: '+e.message;output.innerHTML='';section.classList.remove('visible');}

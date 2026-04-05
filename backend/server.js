@@ -21,7 +21,33 @@ function supaHeaders() {
   };
 }
 
+const GEMINI_KEY = process.env.GEMINI_KEY || 'AIzaSyB1jYUU882KjAVn2dQbOdiMMxGek8pwz-s';
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// Gemini proxy endpoint
+app.post('/api/gemini', async (req, res) => {
+  try {
+    const { model, contents, generationConfig } = req.body;
+    const modelId = model || 'gemini-2.5-flash-lite';
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents, generationConfig: generationConfig || { maxOutputTokens: 3000, temperature: 0.3 } }),
+      }
+    );
+    const data = await response.json();
+    if (!response.ok || data.error) {
+      return res.status(response.status || 500).json({ error: data.error?.message || 'Gemini API error' });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error('Gemini error:', err);
+    res.status(500).json({ error: 'Gemini request failed' });
+  }
+});
 
 app.post('/api/chat', async (req, res) => {
   try {
