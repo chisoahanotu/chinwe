@@ -77,10 +77,12 @@
   .test-btn.loading .test-btn-text { display: none; }
   .response-body { font-size: 13.5px; line-height: 1.8; color: var(--text); font-family: var(--sans); }
   .response-body strong { color: var(--accent2); font-weight: 600; }
-  .response-body.two-col { column-count: 2; column-gap: 24px; column-rule: 1px solid var(--border); }
-  .response-body.two-col .one-liner { column-span: all; margin-bottom: 12px; }
-  .response-body.two-col .section-block { break-inside: avoid; margin-bottom: 10px; }
-  @media (max-width: 700px) { .response-body.two-col { column-count: 1; } }
+  .response-body.two-col .one-liner { margin-bottom: 12px; }
+  .response-body.two-col .section-block { margin-bottom: 10px; }
+  .pres-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .pres-columns .pres-col { border-left: 1px solid var(--border); padding-left: 16px; }
+  .pres-columns .pres-col:first-child { border-left: none; padding-left: 0; }
+  @media (max-width: 700px) { .pres-columns { grid-template-columns: 1fr; } .pres-columns .pres-col { border-left: none; padding-left: 0; } }
   /* H&X */
   .hx-output { display: flex; flex-direction: column; gap: 10px; }
   .hx-section { border: 1px solid var(--border2); border-radius: 10px; overflow: hidden; }
@@ -998,14 +1000,32 @@ function fmtPresentation(t){
   const html=t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
   const blocks=html.split(/\n\n+/);
   if(blocks.length<=1) return '<div>'+html.replace(/\n/g,'<br>')+'</div>';
-  // First two blocks span full width (identifier + overnight events)
-  const fullWidthCount=Math.min(2,blocks.length);
+  // Detect how many leading blocks are full-width (one-liner, overnight events, etc.)
+  // Full width = any block that mentions overnight, identifier keywords, or is one of the first blocks before structured sections
+  let fullWidthEnd=0;
+  for(let i=0;i<blocks.length;i++){
+    const lower=blocks[i].toLowerCase();
+    if(i<3&&(i===0||lower.includes('overnight')||lower.includes('events')||lower.includes('admitted')||lower.includes('hospital day')||!lower.includes(':'))){
+      fullWidthEnd=i+1;
+    }else break;
+  }
+  if(fullWidthEnd===0)fullWidthEnd=1;// at least the first block is full width
+
   let result='';
-  for(let i=0;i<fullWidthCount;i++){
+  for(let i=0;i<fullWidthEnd;i++){
     result+='<div class="one-liner">'+blocks[i].replace(/\n/g,'<br>')+'</div>';
   }
-  for(let i=fullWidthCount;i<blocks.length;i++){
-    result+='<div class="section-block">'+blocks[i].replace(/\n/g,'<br>')+'</div>';
+  // Remaining blocks go in a two-column grid (left fills first, then right)
+  const colBlocks=blocks.slice(fullWidthEnd);
+  if(colBlocks.length>0){
+    const mid=Math.ceil(colBlocks.length/2);
+    const left=colBlocks.slice(0,mid);
+    const right=colBlocks.slice(mid);
+    result+='<div class="pres-columns"><div class="pres-col">';
+    left.forEach(b=>{result+='<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>';});
+    result+='</div><div class="pres-col">';
+    right.forEach(b=>{result+='<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>';});
+    result+='</div></div>';
   }
   return result;
 }
