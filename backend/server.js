@@ -287,18 +287,22 @@ app.post('/api/proxy-image', async (req, res) => {
 });
 
 // ── Image curation API (Supabase) ───────────────────────────────
-// GET curated images for a maneuver
+// GET curated images + video for a maneuver
 app.get('/api/curated-images/:maneuver', async (req, res) => {
   try {
     const key = req.params.maneuver.toLowerCase().trim();
-    const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/curated_images?maneuver=eq.${encodeURIComponent(key)}&select=*&limit=1`,
-      { headers: supaHeaders() }
-    );
-    const rows = await resp.json();
-    if (!rows.length) return res.json({ curated: false });
-    const entry = rows[0];
-    res.json({ curated: true, images: entry.images || [] });
+    const [imgResp, vidResp] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/curated_images?maneuver=eq.${encodeURIComponent(key)}&select=*&limit=1`, { headers: supaHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/maneuver_videos?maneuver=eq.${encodeURIComponent(key)}&select=*&limit=1`, { headers: supaHeaders() }),
+    ]);
+    const imgRows = await imgResp.json();
+    const vidRows = await vidResp.json();
+    if (!imgRows.length && !vidRows.length) return res.json({ curated: false });
+    res.json({
+      curated: true,
+      images: imgRows[0]?.images || [],
+      video_url: vidRows[0]?.video_url || '',
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -326,18 +330,48 @@ app.post('/api/curated-images', async (req, res) => {
   }
 });
 
+// POST save video URL for a maneuver
+app.post('/api/maneuver-video', async (req, res) => {
+  try {
+    const { maneuver, video_url } = req.body;
+    if (!maneuver) return res.status(400).json({ error: 'maneuver required' });
+    const key = maneuver.toLowerCase().trim();
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/maneuver_videos`,
+      {
+        method: 'POST',
+        headers: { ...supaHeaders(), 'Prefer': 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify({ maneuver: key, video_url: video_url || '' }),
+      }
+    );
+    const data = await resp.json();
+    res.json({ ok: true, maneuver: key });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET all curated maneuvers (admin overview)
 app.get('/api/curated-images', async (req, res) => {
   try {
-    const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/curated_images?select=maneuver,images,updated_at&order=maneuver`,
-      { headers: supaHeaders() }
-    );
-    const rows = await resp.json();
-    // Convert to object keyed by maneuver name for compatibility
+    const [imgResp, vidResp] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/curated_images?select=maneuver,images,updated_at&order=maneuver`, { headers: supaHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/maneuver_videos?select=maneuver,video_url`, { headers: supaHeaders() }),
+    ]);
+    const imgRows = await imgResp.json();
+    const vidRows = await vidResp.json();
+    const videoMap = {};
+    for (const v of vidRows) { videoMap[v.maneuver] = v.video_url; }
     const result = {};
-    for (const row of rows) {
-      result[row.maneuver] = { images: row.images || [], updated_at: row.updated_at };
+    // Merge images and videos
+    const allKeys = new Set([...imgRows.map(r => r.maneuver), ...Object.keys(videoMap)]);
+    for (const key of allKeys) {
+      const imgRow = imgRows.find(r => r.maneuver === key);
+      result[key] = {
+        images: imgRow?.images || [],
+        video_url: videoMap[key] || '',
+        updated_at: imgRow?.updated_at || '',
+      };
     }
     res.json(result);
   } catch (err) {

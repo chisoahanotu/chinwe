@@ -206,7 +206,7 @@ function renderRegionTabs(){
   container.innerHTML='';
   Object.keys(REGIONS).forEach(region=>{
     const maneuvers=REGIONS[region];
-    const doneCount=maneuvers.filter(m=>curatedData[m.name.toLowerCase().trim()]?.images?.length>0).length;
+    const doneCount=maneuvers.filter(m=>{const d=curatedData[m.name.toLowerCase().trim()];return d?.images?.length>0||d?.video_url;}).length;
     const allDone=doneCount===maneuvers.length;
     const tab=document.createElement('button');
     tab.className='region-tab'+(currentRegion===region?' active':'');
@@ -230,6 +230,7 @@ function renderManeuvers(region){
   maneuvers.forEach(m=>{
     const key=m.name.toLowerCase().trim();
     const existing=curatedData[key]?.images||[];
+    const existingVideo=curatedData[key]?.video_url||'';
     cardImages[m.name]=existing.slice();// copy
 
     const card=document.createElement('div');
@@ -260,6 +261,10 @@ function renderManeuvers(region){
         ondrop="handleDrop(event,'${safeName}')"
         onclick="clickUpload('${safeName}')">
         <div class="drop-zone-text">Drop images here or click to upload</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+        <span style="font-size:11px;color:var(--muted2);white-space:nowrap;">Video URL</span>
+        <input type="text" id="video-${safeKey}" value="${existingVideo}" placeholder="https://youtu.be/..." style="flex:1;padding:7px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;color:var(--text);background:var(--surface2);outline:none;font-family:var(--sans);" />
       </div>
       ${stanfordRef}
       <div style="display:flex;align-items:center;margin-top:10px;gap:8px;">
@@ -371,24 +376,41 @@ async function saveCard(maneuverName){
   const key=maneuverName.toLowerCase().trim().replace(/[^a-z0-9]/g,'-');
   const statusEl=document.getElementById('save-status-'+key);
   const images=cardImages[maneuverName]||[];
+  const videoInput=document.getElementById('video-'+key);
+  const videoUrl=videoInput?videoInput.value.trim():'';
 
   statusEl.textContent='Saving...';
   try{
-    await fetch(API_BASE+'/api/curated-images',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({maneuver:maneuverName,images}),
-    });
-    curatedData[maneuverName.toLowerCase().trim()]={images,updated_at:new Date().toISOString()};
+    // Save images and video in parallel
+    const promises=[
+      fetch(API_BASE+'/api/curated-images',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({maneuver:maneuverName,images}),
+      })
+    ];
+    if(videoUrl){
+      promises.push(fetch(API_BASE+'/api/maneuver-video',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({maneuver:maneuverName,video_url:videoUrl}),
+      }));
+    }
+    await Promise.all(promises);
+    curatedData[maneuverName.toLowerCase().trim()]={images,video_url:videoUrl,updated_at:new Date().toISOString()};
     statusEl.textContent='Saved!';
     setTimeout(()=>{statusEl.textContent='';},2000);
 
     // Update card styling
     const card=document.getElementById('card-'+key);
     const status=document.getElementById('status-'+key);
-    if(images.length>0){
+    const hasContent=images.length>0||videoUrl;
+    if(hasContent){
       card?.classList.add('has-images');
-      if(status){status.className='maneuver-status done';status.textContent=images.length+' image'+(images.length>1?'s':'');}
+      const parts=[];
+      if(images.length>0) parts.push(images.length+' image'+(images.length>1?'s':''));
+      if(videoUrl) parts.push('video');
+      if(status){status.className='maneuver-status done';status.textContent=parts.join(' + ');}
     }else{
       card?.classList.remove('has-images');
       if(status){status.className='maneuver-status pending';status.textContent='needs images';}
@@ -403,7 +425,7 @@ async function saveCard(maneuverName){
 function updateProgress(){
   const allManeuvers=Object.values(REGIONS).flat();
   const total=allManeuvers.length;
-  const done=allManeuvers.filter(m=>curatedData[m.name.toLowerCase().trim()]?.images?.length>0).length;
+  const done=allManeuvers.filter(m=>{const d=curatedData[m.name.toLowerCase().trim()];return d?.images?.length>0||d?.video_url;}).length;
   const pct=total>0?Math.round(done/total*100):0;
   document.getElementById('progress-text').textContent=`${done} / ${total} done`;
   document.getElementById('progress-fill').style.width=pct+'%';
