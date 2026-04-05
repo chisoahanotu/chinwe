@@ -1113,9 +1113,12 @@ No markdown, no code fences.`;
           catch(e){const match=raw.match(/\{[\s\S]*\}/);if(match)parsed=JSON.parse(match[0]);else throw new Error('JSON parse failed');}
           if(!parsed.sections||parsed.sections.length===0)throw new Error('No sections returned');
 
-          // Normalize: ensure every section has "title" not just "name"
+          // Normalize: ensure every section has "title" (Haiku uses "name" or "text" inconsistently)
           parsed.sections.forEach(sec=>{
-            if(!sec.title&&sec.name){sec.title=sec.name;}
+            if(!sec.title){
+              if(sec.name) sec.title=sec.name;
+              else if(typeof sec.text==='string'&&sec.items) { sec.title=sec.text; delete sec.text; }
+            }
           });
 
           // Check all expected sections are present with items
