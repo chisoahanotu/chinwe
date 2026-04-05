@@ -58,19 +58,6 @@
   .stanford-ref{font-size:11px;color:var(--teal);margin-top:6px;}
   .stanford-ref a{color:var(--teal);text-decoration:underline;}
 
-  .suggest-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;margin-bottom:10px;}
-  .suggest-wrap{position:relative;display:inline-block;border:2px solid var(--border2);border-radius:8px;overflow:hidden;transition:all 0.15s;cursor:pointer;}
-  .suggest-wrap:hover{border-color:var(--teal);}
-  .suggest-wrap.selected{border-color:var(--green);box-shadow:0 0 0 2px rgba(22,163,74,0.3);}
-  .suggest-wrap.rejected{opacity:0.2;border-color:var(--red);}
-  .suggest-img{width:130px;height:100px;object-fit:cover;display:block;}
-  .suggest-check{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:14px;display:none;align-items:center;justify-content:center;font-weight:700;}
-  .suggest-wrap.selected .suggest-check{display:flex;}
-  .find-btn{background:var(--surface2);border:1.5px solid var(--border2);color:var(--muted2);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all 0.15s;margin-top:8px;}
-  .find-btn:hover{border-color:var(--teal);color:var(--teal);}
-  .find-btn:disabled{opacity:0.4;cursor:not-allowed;}
-  .find-btn .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;}
-  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -229,57 +216,10 @@ function renderRegionTabs(){
   });
 }
 
-async function selectRegion(region){
+function selectRegion(region){
   currentRegion=region;
   renderRegionTabs();
   renderManeuvers(region);
-
-  // Auto-scan Stanford page for this region, then auto-find images for maneuvers not on Stanford
-  const maneuvers=REGIONS[region];
-  const stanfordUrls=[...new Set(maneuvers.map(m=>m.stanford).filter(Boolean))];
-
-  if(stanfordUrls.length===0) {
-    // No Stanford page — auto-find all uncurated
-    for(const m of maneuvers){
-      const key=m.name.toLowerCase().trim();
-      if(curatedData[key]?.images?.length>0) continue;
-      autoFindImages(m.name);
-    }
-    return;
-  }
-
-  // Fetch Stanford page(s) and check which maneuvers are mentioned
-  for(const url of stanfordUrls){
-    try{
-      const resp=await fetch(API_BASE+'/api/stanford-fetch',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({url}),
-      });
-      const data=await resp.json();
-      const pageText=(data.bodyText||'').toLowerCase();
-
-      for(const m of maneuvers){
-        if(m.stanford!==url) continue;
-        const key=m.name.toLowerCase().trim();
-        if(curatedData[key]?.images?.length>0) continue;// already curated
-
-        // Check if this specific maneuver is mentioned on the Stanford page
-        const searchTerms=m.name.toLowerCase().replace(/test$|sign$|maneuver$/,'').trim().split(/\s+/);
-        const found=searchTerms.some(term=>term.length>3&&pageText.includes(term));
-
-        if(!found){
-          // Not on Stanford — auto-find images
-          const safeKey=key.replace(/[^a-z0-9]/g,'-');
-          const statusEl=document.getElementById('save-status-'+safeKey);
-          if(statusEl) statusEl.textContent='Not on Stanford — finding images...';
-          autoFindImages(m.name);
-        }
-      }
-    }catch(e){
-      console.error('Stanford scan failed for '+url,e);
-    }
-  }
 }
 
 function renderManeuvers(region){
@@ -314,21 +254,16 @@ function renderManeuvers(region){
         <span class="maneuver-status ${existing.length>0?'done':'pending'}" id="status-${safeKey}">${existing.length>0?existing.length+' image'+(existing.length>1?'s':''):'needs images'}</span>
       </div>
       <div class="maneuver-images" id="images-${safeKey}">${imgsHtml}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <div class="drop-zone" id="drop-${safeKey}" style="flex:1;min-width:200px;"
-          ondragover="event.preventDefault();this.classList.add('drag-over')"
-          ondragleave="this.classList.remove('drag-over')"
-          ondrop="handleDrop(event,'${safeName}')"
-          onclick="clickUpload('${safeName}')">
-          <div class="drop-zone-text">Drop images here or click to upload</div>
-        </div>
-        <button class="find-btn" id="find-${safeKey}" onclick="findImages('${safeName}',this)">&#128269; Find images</button>
+      <div class="drop-zone" id="drop-${safeKey}"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event,'${safeName}')"
+        onclick="clickUpload('${safeName}')">
+        <div class="drop-zone-text">Drop images here or click to upload</div>
       </div>
-      <div class="suggest-grid" id="suggest-${safeKey}"></div>
       ${stanfordRef}
       <div style="display:flex;align-items:center;margin-top:10px;gap:8px;">
         <button class="save-btn" onclick="saveCard('${safeName}')">Save</button>
-        <button class="save-btn" style="background:var(--green);" onclick="approveSelected('${safeName}')" id="approve-btn-${safeKey}" style="display:none;">Add selected</button>
         <span class="save-status" id="save-status-${safeKey}"></span>
       </div>
     `;
@@ -463,119 +398,6 @@ async function saveCard(maneuverName){
   }catch(e){
     statusEl.textContent='Error: '+e.message;
   }
-}
-
-async function autoFindImages(maneuverName){
-  const key=maneuverName.toLowerCase().trim().replace(/[^a-z0-9]/g,'-');
-  const suggestEl=document.getElementById('suggest-'+key);
-  const findBtn=document.getElementById('find-'+key);
-  if(!suggestEl) return;
-
-  suggestEl.innerHTML='<span style="font-size:11px;color:var(--muted);"><span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span>Searching for images...</span>';
-  if(findBtn) findBtn.disabled=true;
-
-  try{
-    const resp=await fetch(API_BASE+'/api/search-images',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({query:maneuverName}),
-    });
-    const data=await resp.json();
-    const images=data.images||[];
-
-    if(images.length===0){
-      suggestEl.innerHTML='<span style="font-size:11px;color:var(--muted);">No images found — try uploading manually</span>';
-      if(findBtn) findBtn.disabled=false;
-      return;
-    }
-
-    suggestEl.innerHTML='';
-    images.forEach((url,i)=>{
-      const wrap=document.createElement('div');
-      wrap.className='suggest-wrap';
-      wrap.dataset.url=url;
-      wrap.onclick=()=>{
-        if(wrap.classList.contains('rejected')) return;
-        wrap.classList.toggle('selected');
-      };
-      wrap.oncontextmenu=(e)=>{
-        e.preventDefault();
-        wrap.classList.toggle('rejected');
-        wrap.classList.remove('selected');
-      };
-      const img=document.createElement('img');
-      img.className='suggest-img';
-      img.src=url;
-      img.alt=maneuverName;
-      img.onerror=()=>wrap.remove();
-      const check=document.createElement('div');
-      check.className='suggest-check';
-      check.textContent='✓';
-      wrap.appendChild(img);
-      wrap.appendChild(check);
-      suggestEl.appendChild(wrap);
-    });
-
-    // Show instruction
-    const hint=document.createElement('div');
-    hint.style.cssText='width:100%;font-size:10px;color:var(--muted);margin-top:4px;';
-    hint.textContent='Click to select, right-click to reject. Then hit "Add selected".';
-    suggestEl.appendChild(hint);
-
-    // Show the approve button
-    const approveBtn=document.getElementById('approve-btn-'+key);
-    if(approveBtn) approveBtn.style.display='inline-block';
-
-  }catch(e){
-    suggestEl.innerHTML='<span style="font-size:11px;color:var(--red);">Search failed: '+e.message+'</span>';
-  }
-  if(findBtn) findBtn.disabled=false;
-}
-
-function findImages(maneuverName,btn){
-  if(btn) btn.disabled=true;
-  autoFindImages(maneuverName).finally(()=>{if(btn) btn.disabled=false;});
-}
-
-async function approveSelected(maneuverName){
-  const key=maneuverName.toLowerCase().trim().replace(/[^a-z0-9]/g,'-');
-  const suggestEl=document.getElementById('suggest-'+key);
-  const statusEl=document.getElementById('save-status-'+key);
-  const selected=suggestEl?.querySelectorAll('.suggest-wrap.selected')||[];
-
-  if(selected.length===0){
-    if(statusEl) statusEl.textContent='Select at least one image first (click to select).';
-    return;
-  }
-
-  if(statusEl) statusEl.textContent='Loading selected images...';
-
-  // Proxy each selected image to get base64
-  for(const wrap of selected){
-    const url=wrap.dataset.url;
-    try{
-      const resp=await fetch(API_BASE+'/api/proxy-image',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({url}),
-      });
-      const data=await resp.json();
-      if(data.data){
-        if(!cardImages[maneuverName]) cardImages[maneuverName]=[];
-        cardImages[maneuverName].push({data:data.data,mime:data.mime,caption:''});
-      }
-    }catch(e){console.error('Proxy failed for',url);}
-  }
-
-  refreshCardImages(maneuverName);
-
-  // Auto-save
-  await saveCard(maneuverName);
-
-  // Clear suggestions
-  suggestEl.innerHTML='';
-  const approveBtn=document.getElementById('approve-btn-'+key);
-  if(approveBtn) approveBtn.style.display='none';
 }
 
 function updateProgress(){
