@@ -994,34 +994,6 @@ async function runHx(){
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
   output.innerHTML='<span style="color:var(--muted);font-size:13px;">Generating...</span>';section.classList.add('visible');
 
-  // Cache logic — only cache if no chart context (generic queries)
-  const useCache=!chart;
-  let cacheKey='';
-  if(useCache){
-    const ageParsed=age.match(/(\d+)\s*([mfMF])?/);
-    let ageBracket='adult',sex='u';
-    if(ageParsed){
-      const ageNum=parseInt(ageParsed[1]);
-      if(ageNum<18) ageBracket='peds';
-      else if(ageNum<40) ageBracket='young';
-      else if(ageNum<65) ageBracket='middle';
-      else ageBracket='elderly';
-      sex=(ageParsed[2]||'u').toLowerCase();
-    }
-    const vt=isNewPatient?'new':'returning';
-    cacheKey=`${cc.toLowerCase().trim()}|${ageBracket}|${sex}|${vt}`;
-    // Check cache
-    try{
-      const cacheResp=await fetch(`${API_BASE}/api/hx-cache/${encodeURIComponent(cacheKey)}`);
-      const cacheData=await cacheResp.json();
-      if(cacheData.cached){
-        renderHxOutput(cacheData.result);
-        btn.classList.remove('loading');btn.disabled=false;
-        return;
-      }
-    }catch(e){}
-  }
-
   const visitType=isNewPatient?'NEW PATIENT (establishing care — include comprehensive history, full PMH/surgical/family/social, and age-appropriate screening)':'RETURNING PATIENT (focus on chief complaint and interval changes — skip comprehensive intake, PMH/family/social already in chart)';
 
   const sectionList=isNewPatient
@@ -1057,13 +1029,6 @@ Rules:
     const raw=await callGemini(prompt);
     let parsed;try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}catch(jsonErr){const match=raw.match(/\{[\s\S]*\}/);if(match){parsed=JSON.parse(match[0]);}else{throw jsonErr;}}
     renderHxOutput(parsed);
-    // Save to cache if applicable
-    if(useCache&&cacheKey){
-      const ageParsed=age.match(/(\d+)\s*([mfMF])?/);
-      let ageBracket='adult',sex='u';
-      if(ageParsed){const n=parseInt(ageParsed[1]);ageBracket=n<18?'peds':n<40?'young':n<65?'middle':'elderly';sex=(ageParsed[2]||'u').toLowerCase();}
-      fetch(`${API_BASE}/api/hx-cache`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cache_key:cacheKey,complaint:cc.toLowerCase().trim(),age_bracket:ageBracket,sex,visit_type:isNewPatient?'new':'returning',result:parsed})}).catch(()=>{});
-    }
   }catch(e){errorEl.textContent='Error: '+e.message;output.innerHTML='';section.classList.remove('visible');}
   finally{btn.classList.remove('loading');btn.disabled=false;}
 }
