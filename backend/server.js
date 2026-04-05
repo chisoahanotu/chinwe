@@ -25,6 +25,47 @@ const GEMINI_KEY = process.env.GEMINI_KEY || '';
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+// Parallel chat — run multiple Claude calls simultaneously
+app.post('/api/chat/parallel', async (req, res) => {
+  try {
+    const { calls } = req.body;
+    if (!calls || !Array.isArray(calls)) {
+      return res.status(400).json({ error: 'calls array required' });
+    }
+
+    const results = await Promise.all(calls.map(async (call) => {
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: call.model || 'claude-haiku-4-5-20251001',
+            max_tokens: call.max_tokens || 1000,
+            system: call.system,
+            messages: call.messages,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          return { error: data.error?.message || 'API error' };
+        }
+        return data;
+      } catch (err) {
+        return { error: err.message };
+      }
+    }));
+
+    res.json({ results });
+  } catch (err) {
+    console.error('Parallel chat error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Gemini proxy endpoint
 app.post('/api/gemini', async (req, res) => {
   try {

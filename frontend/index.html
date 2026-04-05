@@ -994,43 +994,53 @@ async function runHx(){
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
   output.innerHTML='<span style="color:var(--muted);font-size:13px;">Generating...</span>';section.classList.add('visible');
 
-  const visitType=isNewPatient?'NEW PATIENT (establishing care — include comprehensive history, full PMH/surgical/family/social)':'RETURNING PATIENT (focus on chief complaint and interval changes — skip comprehensive intake, PMH/family/social already in chart)';
+  const visitType=isNewPatient?'NEW PATIENT (establishing care)':'RETURNING PATIENT';
+  const chartInfo=chart?`\nChart context (ALREADY KNOWN — do not repeat): ${chart}`:'';
 
-  const chartRule=chart
-    ?'\n- CRITICAL: Chart context is provided. Do NOT repeat information already in the chart context as items. Instead, ask about things NOT in the chart that are relevant to this complaint. For PMH & Risk Factors, focus on family history, undiagnosed conditions, and risk factors NOT already documented. Never parrot back known PMH.'
-    :'';
+  const shared=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
+Visit type: ${visitType}${chartInfo}
 
-  const prompt=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
-Visit type: ${visitType}${chart?'\nChart context (ALREADY KNOWN — do not repeat these): '+chart:''}
-
-Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JSON object.
-
-Required structure: {"sections":[...]} where sections is an array of 7 objects with titles: "Onset & Character", "Associated Symptoms", "PMH & Risk Factors", "Medications & Social History", "Physical Exam", "Red Flags", "Attending Pearls".
-
+Return ONLY valid JSON: {"sections":[...]}
 Each item: {"text":"...","highYield":bool,"rationale":"...","maneuvers":[]}
+TEXT: concise clinical shorthand, NOT full sentences or vague categories.
+RATIONALE: 1 sentence — WHY this matters diagnostically. Name specific tests/conditions.
+MANEUVERS: array of named clinical tests. Empty [] if none.
+3-4 items per section, 1-2 highYield.`;
 
-CRITICAL RULES FOR TEXT FIELD:
-- "text" must be a SPECIFIC clinical question or action the student should ask/do — NOT a vague category
-- BAD: "Chest pain onset" — this is a category label, not a question
-- GOOD: "When exactly did it start, and what were you doing?" — this is what you actually say to the patient
-- BAD: "Quality / character" — vague category
-- GOOD: "Is it pressure, sharp, squeezing, or burning?" — specific differentiating question
-- BAD: "Associated symptoms" — useless
-- GOOD: "Any nausea, diaphoresis, dyspnea, or radiation to jaw/arm/back?" — targeted ROS
-- For Physical Exam: "text" should be the specific maneuver or exam action, not "cardiovascular exam"
-- Each item should teach the student WHAT TO SAY or WHAT TO DO, not just what topic to cover
+  const chartWarning=chart?'\nCRITICAL: The patient\'s known PMH and meds are ALREADY KNOWN. Do NOT include any of these as items. Ask about things NOT in the chart.':'';
 
-RATIONALE: 1 sentence explaining WHY this question matters diagnostically. Name specific tests/maneuvers when relevant.
-MANEUVERS: array of named clinical tests mentioned in text or rationale. Empty [] if none.
+  const parallelCalls=[
+    {messages:[{role:'user',content:`${shared}\nGenerate 2 sections: "Onset & Character", "Associated Symptoms".${chartWarning}`}]},
+    {messages:[{role:'user',content:`${shared}\nGenerate 2 sections: "PMH & Risk Factors", "Medications & Social History".${chartWarning}\nFocus on what's NOT in chart context: prior cardiac events, family hx, smoking, cocaine, recent med changes, new OTC meds.`}]},
+    {messages:[{role:'user',content:`${shared}\nGenerate 1 section: "Physical Exam".\nName exact maneuvers. Include BP both arms, cardiac auscultation specifics, lung exam, chest wall palpation, extremity exam.`}]},
+    {messages:[{role:'user',content:`${shared}\nGenerate 1 section: "Red Flags".\nInclude specific diagnostic criteria and immediate next steps for each red flag.`}]},
+    {messages:[{role:'user',content:`${shared}\nGenerate 1 section: "Attending Pearls".\nFull teaching sentences specific to THIS patient's demographics and comorbidities. Not generic advice. Rationale can be empty string.`}]},
+  ];
 
-Other rules:
-- 3-4 items per section, 1-2 highYield per section
-- Do NOT repeat anything from chart context
-- Attending Pearls: full teaching sentences, rationale can be empty string
-- For returning patients: skip comprehensive intake, focus on complaint${chartRule}`;
   try{
-    const raw=await callGemini(prompt);
-    let parsed;try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}catch(jsonErr){const match=raw.match(/\{[\s\S]*\}/);if(match){parsed=JSON.parse(match[0]);}else{throw jsonErr;}}
+    const resp=await fetch(`${API_BASE}/api/chat/parallel`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({calls:parallelCalls.map(c=>({model:'claude-haiku-4-5-20251001',max_tokens:1000,...c}))}),
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
+    const data=await resp.json();
+
+    // Merge all sections
+    const allSections=[];
+    for(const result of data.results){
+      if(result.error){console.error('Parallel call error:',result.error);continue;}
+      const raw=result.content?.map(b=>b.text||'').join('')||'';
+      try{
+        const p=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());
+        if(p.sections) allSections.push(...p.sections);
+      }catch(e){
+        const match=raw.match(/\{[\s\S]*\}/);
+        if(match){const p=JSON.parse(match[0]);if(p.sections) allSections.push(...p.sections);}
+      }
+    }
+
+    const parsed={sections:allSections};
     // Append screening section for new patients (client-side, no AI needed)
     if(isNewPatient&&age){
       const screening=buildScreeningSection(age);
