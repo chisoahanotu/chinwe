@@ -1041,25 +1041,53 @@ No markdown, no code fences.`;
 
     // Haiku: generate items (no rationale) — arrives ~4s
     const haikuPrompt=`${sharedHaiku}\nGenerate ${group.sec.length} section(s): ${secList}.${group.extra}`;
-    const haikuPromise=fetch(`${API_BASE}/api/chat`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,messages:[{role:'user',content:haikuPrompt}]}),
-    }).then(r=>r.json()).then(data=>{
-      const raw=data.content?.map(b=>b.text||'').join('')||'';
-      let parsed;
-      try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}
-      catch(e){const match=raw.match(/\{[\s\S]*\}/);if(match)parsed=JSON.parse(match[0]);else return [];}
-      if(!parsed.sections)return [];
-      // Populate sections with items (no rationale yet)
-      const itemTexts=[];
-      parsed.sections.forEach(sec=>{
-        const title=sec.title||sec.name||'';
-        const isPearls=title.includes('Pearl');
-        populateSection(title,sec.items,!isPearls);
-        if(!isPearls) sec.items.forEach(item=>itemTexts.push({title,text:item.text,maneuvers:item.maneuvers||[]}));
-      });
-      return itemTexts;
-    }).catch(e=>{console.error('Haiku error:',e);return [];});
+
+    async function callHaikuWithRetry(prompt,expectedSections,retries=1){
+      for(let attempt=0;attempt<=retries;attempt++){
+        try{
+          const r=await fetch(`${API_BASE}/api/chat`,{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,messages:[{role:'user',content:prompt}]}),
+          });
+          const data=await r.json();
+          if(data.error)throw new Error(data.error);
+          const raw=data.content?.map(b=>b.text||'').join('')||'';
+          let parsed;
+          try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}
+          catch(e){const match=raw.match(/\{[\s\S]*\}/);if(match)parsed=JSON.parse(match[0]);else throw new Error('JSON parse failed');}
+          if(!parsed.sections||parsed.sections.length===0)throw new Error('No sections returned');
+
+          // Normalize: ensure every section has "title" not just "name"
+          parsed.sections.forEach(sec=>{
+            if(!sec.title&&sec.name){sec.title=sec.name;}
+          });
+
+          // Check all expected sections are present with items
+          const returnedTitles=parsed.sections.map(s=>s.title||'').filter(Boolean);
+          const missing=expectedSections.filter(e=>!returnedTitles.some(r=>r.toLowerCase().includes(e.toLowerCase().substring(0,8))));
+          if(missing.length>0&&attempt<retries){
+            console.warn(`Haiku missing sections: ${missing.join(', ')} — retrying`);
+            continue;
+          }
+
+          // Populate
+          const itemTexts=[];
+          parsed.sections.forEach(sec=>{
+            const title=sec.title||'';
+            if(!title||!sec.items||sec.items.length===0)return;
+            const isPearls=title.includes('Pearl');
+            populateSection(title,sec.items,!isPearls);
+            if(!isPearls) sec.items.forEach(item=>itemTexts.push({title,text:item.text,maneuvers:item.maneuvers||[]}));
+          });
+          return itemTexts;
+        }catch(e){
+          if(attempt>=retries){console.error('Haiku failed after retry:',e);return [];}
+        }
+      }
+      return [];
+    }
+
+    const haikuPromise=callHaikuWithRetry(haikuPrompt,group.sec);
 
     // Sonnet: generate rationales — arrives ~7-10s, upgrades the "Why ask?" content
     // Skip for Pearls (no rationale needed)
