@@ -1038,26 +1038,38 @@ MANEUVERS: array of named clinical tests. Empty [] if none.
     if(screening) populateSection('Age-Appropriate Screening',screening.items,false);
   }
 
-  // Fire 7 parallel Haiku calls for items (no rationale)
-  const haikuCalls=[
+  // Shared Sonnet prompt — generates BOTH items and rationales
+  const sharedSonnet=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
+Visit type: ${visitType}${chartInfo}
+
+Return ONLY valid JSON: {"sections":[...]}
+Each item: {"text":"...","highYield":bool,"rationale":"...","maneuvers":[]}
+
+TEXT: concise clinical shorthand coaching the student (not patient script)
+- "Onset, character, duration, radiation" not "When did your chest pain start?"
+- "Leg pain or swelling? Unilateral vs bilateral" not "Have you noticed swelling?"
+- For PE: name specific maneuvers
+RATIONALE: 1 sentence — WHY this changes differential or management. Name conditions, tests, thresholds.
+MANEUVERS: array of named clinical tests. Empty [] if none.
+3-4 items per section, 1-2 highYield.`;
+
+  // 5 section groups — each gets its own Sonnet call, all fire simultaneously
+  const callGroups=[
     {sec:['Onset & Character','Associated Symptoms'],extra:chartWarning},
     {sec:['PMH & Risk Factors','Medications & Social History'],extra:chartWarning+'\nFocus on what\'s NOT in chart: prior cardiac events, family hx, smoking, cocaine, recent med changes.'},
     {sec:['Physical Exam'],extra:'\nName exact maneuvers: BP both arms, cardiac auscultation, lung exam, chest wall palpation, extremity exam.'},
-    {sec:['Red Flags'],extra:'\nSpecific diagnostic criteria and immediate next steps.'},
-    {sec:['Attending Pearls'],extra:'\nFull teaching sentences specific to THIS patient. Not generic. Include "rationale":"" for each item.'},
+    {sec:['Red Flags'],extra:'\nSpecific diagnostic criteria and immediate next steps for each.'},
+    {sec:['Attending Pearls'],extra:'\nFull teaching sentences specific to THIS patient. Not generic. Rationale can be empty.'},
   ];
 
-  // Track all items for rationale generation
-  const allItemsForRationale=[];
+  // Fire all 5 Sonnet calls simultaneously — each populates its sections as it finishes
+  const allPromises=callGroups.map(group=>{
+    const secList=group.sec.map(s=>`"${s}"`).join(', ');
+    const prompt=`${sharedSonnet}\nGenerate ${group.sec.length} section(s): ${secList}.${group.extra}`;
 
-  // Fire all Haiku calls — populate sections as each finishes
-  const haikuPromises=haikuCalls.map(call=>{
-    const secList=call.sec.map(s=>`"${s}"`).join(', ');
-    const prompt=`${sharedHaiku}\nGenerate ${call.sec.length} section(s): ${secList}.${call.extra}`;
     return fetch(`${API_BASE}/api/chat`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,messages:[{role:'user',content:prompt}]}),
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]}),
     }).then(r=>r.json()).then(data=>{
       const raw=data.content?.map(b=>b.text||'').join('')||'';
       let parsed;
@@ -1068,59 +1080,12 @@ MANEUVERS: array of named clinical tests. Empty [] if none.
         const title=sec.title||sec.name||'';
         const isPearls=title.includes('Pearl');
         populateSection(title,sec.items,!isPearls);
-        if(!isPearls){
-          sec.items.forEach(item=>{
-            allItemsForRationale.push({title,text:item.text,maneuvers:item.maneuvers||[]});
-          });
-        }
       });
-    }).catch(e=>console.error('Haiku call error:',e));
+    }).catch(e=>console.error('Sonnet call error:',e));
   });
 
-  // Wait for all Haiku calls, then fire Sonnet for rationales
-  Promise.all(haikuPromises).then(()=>{
+  Promise.all(allPromises).then(()=>{
     btn.classList.remove('loading');btn.disabled=false;
-    if(allItemsForRationale.length===0)return;
-
-    // Build rationale prompt with all items
-    const itemList=allItemsForRationale.map((item,i)=>
-      `${i}. [${item.title}] "${item.text}"`
-    ).join('\n');
-
-    const rationalePrompt=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
-Visit type: ${visitType}${chartInfo}
-
-Below are clinical coaching items generated for a medical student. For each item, write a 1-sentence rationale explaining WHY this finding changes the differential or management. Be specific — name conditions, tests, and clinical significance.
-
-Items:
-${itemList}
-
-Return ONLY valid JSON array: [{"index":0,"rationale":"..."},{"index":1,"rationale":"..."},...]
-No markdown, no code fences.`;
-
-    fetch(`${API_BASE}/api/chat`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:rationalePrompt}]}),
-    }).then(r=>r.json()).then(data=>{
-      const raw=data.content?.map(b=>b.text||'').join('')||'';
-      let rationales;
-      try{rationales=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}
-      catch(e){const match=raw.match(/\[[\s\S]*\]/);if(match)rationales=JSON.parse(match[0]);else return;}
-      if(!Array.isArray(rationales))return;
-
-      // Inject rationales into the DOM
-      rationales.forEach(r=>{
-        const item=allItemsForRationale[r.index];
-        if(!item)return;
-        const uid=`why-${r.index}`;
-        const el=document.getElementById(uid);
-        if(el){
-          el.innerHTML=tagManeuvers(escHtml(r.rationale),item.maneuvers);
-          el.classList.remove('loading-rationale');
-        }
-      });
-    }).catch(e=>console.error('Sonnet rationale error:',e));
   }).catch(e=>{
     errorEl.textContent='Error: '+e.message;
     btn.classList.remove('loading');btn.disabled=false;
