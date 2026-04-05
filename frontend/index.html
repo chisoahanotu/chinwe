@@ -937,10 +937,16 @@ async function streamToElement(body,el){
   el.innerHTML='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:1px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
   const resp=await fetch(`${API_BASE}/api/chat/stream`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
-  const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='',full='';
+  const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='',full='',lastRender='';
   while(true){let done,value;try{const r=await reader.read();done=r.done;value=r.value;}catch(e){break;}if(done)break;
     buf+=decoder.decode(value,{stream:true});const parts=buf.split('\n\n');buf=parts.pop();
-    for(const part of parts){for(const line of part.split('\n')){const t=line.trim();if(!t.startsWith('data:'))continue;const raw=t.slice(5).trim();if(!raw||raw==='[DONE]')continue;try{const ev=JSON.parse(raw);if(ev&&typeof ev.text==='string'){full+=ev.text;try{el.innerHTML=fmt(full);}catch(fe){el.textContent=full;}}}catch(e){}}}
+    for(const part of parts){for(const line of part.split('\n')){const t=line.trim();if(!t.startsWith('data:'))continue;const raw=t.slice(5).trim();if(!raw||raw==='[DONE]')continue;try{const ev=JSON.parse(raw);if(ev&&typeof ev.text==='string'){full+=ev.text;}}catch(e){}}}
+    // Render in chunks — only update when a new paragraph/section break arrives
+    const newlines=full.split('\n').length;const lastNewlines=lastRender.split('\n').length;
+    if(newlines>lastNewlines||full.length-lastRender.length>200){
+      lastRender=full;
+      try{el.innerHTML=fmt(full)+'<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';}catch(fe){el.textContent=full;}
+    }
   }
   if(full){try{el.innerHTML=fmt(full);}catch(fe){el.textContent=full;}}
   return full;
