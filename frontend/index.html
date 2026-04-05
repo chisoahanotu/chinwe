@@ -992,63 +992,139 @@ async function runHx(){
   const isNewPatient=document.getElementById('hx-new-patient')?.checked;
   const btn=document.getElementById('hx-btn'),errorEl=document.getElementById('hx-error'),output=document.getElementById('hx-output'),section=document.getElementById('hx-response');
   btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
-  output.innerHTML='<span style="color:var(--muted);font-size:13px;">Generating...</span>';section.classList.add('visible');
+  section.classList.add('visible');
+  hxItemCounter=0;
 
   const visitType=isNewPatient?'NEW PATIENT (establishing care)':'RETURNING PATIENT';
   const chartInfo=chart?`\nChart context (ALREADY KNOWN — do not repeat): ${chart}`:'';
+  const chartWarning=chart?'\nCRITICAL: Patient\'s known PMH and meds are ALREADY KNOWN. Do NOT include any of these as items. Ask about things NOT in the chart.':'';
 
-  const shared=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
+  const sharedHaiku=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
 Visit type: ${visitType}${chartInfo}
 
 Return ONLY valid JSON: {"sections":[...]}
-Each item: {"text":"...","highYield":bool,"rationale":"...","maneuvers":[]}
-TEXT: concise clinical shorthand, NOT full sentences or vague categories.
-RATIONALE: 1 sentence — WHY this matters diagnostically. Name specific tests/conditions.
+Each item: {"text":"...","highYield":bool,"maneuvers":[]}
+NOTE: Do NOT include "rationale" — omit it entirely.
+
+TEXT RULES — coaching a medical student, not scripting patient questions:
+- Concise clinical shorthand: "Onset, character, duration, radiation" not full sentences
+- BAD: "Have you noticed any swelling or pain in your legs?"
+- GOOD: "Leg pain or swelling? Unilateral vs bilateral"
+- Combine related concepts into single items
+- For PE: name specific maneuvers
 MANEUVERS: array of named clinical tests. Empty [] if none.
 3-4 items per section, 1-2 highYield.`;
 
-  const chartWarning=chart?'\nCRITICAL: The patient\'s known PMH and meds are ALREADY KNOWN. Do NOT include any of these as items. Ask about things NOT in the chart.':'';
+  // Show all section headers immediately as loading placeholders
+  const sectionTitles=['Onset & Character','Associated Symptoms','PMH & Risk Factors','Medications & Social History','Physical Exam','Red Flags'];
+  if(isNewPatient&&age) sectionTitles.push('Age-Appropriate Screening');
+  sectionTitles.push('Attending Pearls');
 
-  const parallelCalls=[
-    {messages:[{role:'user',content:`${shared}\nGenerate 2 sections: "Onset & Character", "Associated Symptoms".${chartWarning}`}]},
-    {messages:[{role:'user',content:`${shared}\nGenerate 2 sections: "PMH & Risk Factors", "Medications & Social History".${chartWarning}\nFocus on what's NOT in chart context: prior cardiac events, family hx, smoking, cocaine, recent med changes, new OTC meds.`}]},
-    {messages:[{role:'user',content:`${shared}\nGenerate 1 section: "Physical Exam".\nName exact maneuvers. Include BP both arms, cardiac auscultation specifics, lung exam, chest wall palpation, extremity exam.`}]},
-    {messages:[{role:'user',content:`${shared}\nGenerate 1 section: "Red Flags".\nInclude specific diagnostic criteria and immediate next steps for each red flag.`}]},
-    {messages:[{role:'user',content:`${shared}\nGenerate 1 section: "Attending Pearls".\nFull teaching sentences specific to THIS patient's demographics and comorbidities. Not generic advice. Rationale can be empty string.`}]},
+  output.innerHTML='';
+  sectionTitles.forEach(title=>{
+    const secEl=document.createElement('div');secEl.className='hx-section';secEl.id='hx-sec-'+title.replace(/[^a-zA-Z]/g,'');
+    const header=document.createElement('div');header.className='hx-section-header';
+    header.innerHTML=`<span class="hx-section-title">${title}</span><span class="hx-section-arrow">&#9662;</span>`;
+    header.onclick=()=>secEl.classList.toggle('open');
+    const body=document.createElement('div');body.className='hx-section-body';
+    body.innerHTML='<div style="padding:8px;color:var(--muted);font-size:12px;"><span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span>Loading...</div>';
+    secEl.appendChild(header);secEl.appendChild(body);
+    output.appendChild(secEl);
+  });
+
+  // Add screening immediately (client-side, no API needed)
+  if(isNewPatient&&age){
+    const screening=buildScreeningSection(age);
+    if(screening) populateSection('Age-Appropriate Screening',screening.items,false);
+  }
+
+  // Fire 7 parallel Haiku calls for items (no rationale)
+  const haikuCalls=[
+    {sec:['Onset & Character','Associated Symptoms'],extra:chartWarning},
+    {sec:['PMH & Risk Factors','Medications & Social History'],extra:chartWarning+'\nFocus on what\'s NOT in chart: prior cardiac events, family hx, smoking, cocaine, recent med changes.'},
+    {sec:['Physical Exam'],extra:'\nName exact maneuvers: BP both arms, cardiac auscultation, lung exam, chest wall palpation, extremity exam.'},
+    {sec:['Red Flags'],extra:'\nSpecific diagnostic criteria and immediate next steps.'},
+    {sec:['Attending Pearls'],extra:'\nFull teaching sentences specific to THIS patient. Not generic. Include "rationale":"" for each item.'},
   ];
 
-  try{
-    const resp=await fetch(`${API_BASE}/api/chat/parallel`,{
+  // Track all items for rationale generation
+  const allItemsForRationale=[];
+
+  // Fire all Haiku calls — populate sections as each finishes
+  const haikuPromises=haikuCalls.map(call=>{
+    const secList=call.sec.map(s=>`"${s}"`).join(', ');
+    const prompt=`${sharedHaiku}\nGenerate ${call.sec.length} section(s): ${secList}.${call.extra}`;
+    return fetch(`${API_BASE}/api/chat`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({calls:parallelCalls.map(c=>({model:'claude-haiku-4-5-20251001',max_tokens:1000,...c}))}),
-    });
-    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
-    const data=await resp.json();
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,messages:[{role:'user',content:prompt}]}),
+    }).then(r=>r.json()).then(data=>{
+      const raw=data.content?.map(b=>b.text||'').join('')||'';
+      let parsed;
+      try{parsed=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}
+      catch(e){const match=raw.match(/\{[\s\S]*\}/);if(match)parsed=JSON.parse(match[0]);else return;}
+      if(!parsed.sections)return;
+      parsed.sections.forEach(sec=>{
+        const title=sec.title||sec.name||'';
+        const isPearls=title.includes('Pearl');
+        populateSection(title,sec.items,!isPearls);
+        if(!isPearls){
+          sec.items.forEach(item=>{
+            allItemsForRationale.push({title,text:item.text,maneuvers:item.maneuvers||[]});
+          });
+        }
+      });
+    }).catch(e=>console.error('Haiku call error:',e));
+  });
 
-    // Merge all sections
-    const allSections=[];
-    for(const result of data.results){
-      if(result.error){console.error('Parallel call error:',result.error);continue;}
-      const raw=result.content?.map(b=>b.text||'').join('')||'';
-      try{
-        const p=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());
-        if(p.sections) allSections.push(...p.sections);
-      }catch(e){
-        const match=raw.match(/\{[\s\S]*\}/);
-        if(match){const p=JSON.parse(match[0]);if(p.sections) allSections.push(...p.sections);}
-      }
-    }
+  // Wait for all Haiku calls, then fire Sonnet for rationales
+  Promise.all(haikuPromises).then(()=>{
+    btn.classList.remove('loading');btn.disabled=false;
+    if(allItemsForRationale.length===0)return;
 
-    const parsed={sections:allSections};
-    // Append screening section for new patients (client-side, no AI needed)
-    if(isNewPatient&&age){
-      const screening=buildScreeningSection(age);
-      if(screening) parsed.sections.push(screening);
-    }
-    renderHxOutput(parsed);
-  }catch(e){errorEl.textContent='Error: '+e.message;output.innerHTML='';section.classList.remove('visible');}
-  finally{btn.classList.remove('loading');btn.disabled=false;}
+    // Build rationale prompt with all items
+    const itemList=allItemsForRationale.map((item,i)=>
+      `${i}. [${item.title}] "${item.text}"`
+    ).join('\n');
+
+    const rationalePrompt=`Chief complaint: ${cc}${age?'\nPatient: '+age:''}
+Visit type: ${visitType}${chartInfo}
+
+Below are clinical coaching items generated for a medical student. For each item, write a 1-sentence rationale explaining WHY this finding changes the differential or management. Be specific — name conditions, tests, and clinical significance.
+
+Items:
+${itemList}
+
+Return ONLY valid JSON array: [{"index":0,"rationale":"..."},{"index":1,"rationale":"..."},...]
+No markdown, no code fences.`;
+
+    fetch(`${API_BASE}/api/chat`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:rationalePrompt}]}),
+    }).then(r=>r.json()).then(data=>{
+      const raw=data.content?.map(b=>b.text||'').join('')||'';
+      let rationales;
+      try{rationales=JSON.parse(raw.replace(/\`\`\`json|\`\`\`/g,'').trim());}
+      catch(e){const match=raw.match(/\[[\s\S]*\]/);if(match)rationales=JSON.parse(match[0]);else return;}
+      if(!Array.isArray(rationales))return;
+
+      // Inject rationales into the DOM
+      rationales.forEach(r=>{
+        const item=allItemsForRationale[r.index];
+        if(!item)return;
+        const uid=`why-${r.index}`;
+        const el=document.getElementById(uid);
+        if(el){
+          el.innerHTML=tagManeuvers(escHtml(r.rationale),item.maneuvers);
+          el.classList.remove('loading-rationale');
+        }
+      });
+    }).catch(e=>console.error('Sonnet rationale error:',e));
+  }).catch(e=>{
+    errorEl.textContent='Error: '+e.message;
+    btn.classList.remove('loading');btn.disabled=false;
+  });
 }
 
 function buildScreeningSection(ageStr){
@@ -1075,28 +1151,56 @@ function buildScreeningSection(ageStr){
   return {title:'Age-Appropriate Screening',items};
 }
 
+let hxItemCounter=0;
+
+function populateSection(title,items,showWhyAsk){
+  const secId='hx-sec-'+title.replace(/[^a-zA-Z]/g,'');
+  const secEl=document.getElementById(secId);
+  if(!secEl)return;
+  const body=secEl.querySelector('.hx-section-body');
+  if(!body)return;
+
+  const isPearls=title.includes('Pearl');
+  const isScreening=title.includes('Screening');
+  const itemsDiv=document.createElement('div');itemsDiv.className='hx-items';
+
+  items.forEach(item=>{
+    const itemEl=document.createElement('div');itemEl.className='hx-item';
+    const maneuvers=item.maneuvers||[];
+    if(isPearls){
+      itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main hx-pearl">${tagManeuvers(escHtml(item.text),maneuvers)}</span></div>`;
+    }else if(isScreening){
+      const uid=`why-${hxItemCounter}`;
+      itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HY</span> ':''}${escHtml(item.text)}</span><button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button></div><div class="why-rationale" id="${uid}">${escHtml(item.rationale||'')}</div>`;
+      hxItemCounter++;
+    }else{
+      const uid=`why-${hxItemCounter}`;
+      const rationaleContent=showWhyAsk
+        ?'<span style="color:var(--muted);font-size:11px;"><span class="spinner" style="display:inline-block;width:10px;height:10px;border:1.5px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:4px;"></span>Loading...</span>'
+        :(item.rationale?tagManeuvers(escHtml(item.rationale),maneuvers):'');
+      itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HY</span> ':''}${tagManeuvers(escHtml(item.text),maneuvers)}</span>${showWhyAsk?`<button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button>`:''}
+</div>${showWhyAsk?`<div class="why-rationale loading-rationale" id="${uid}">${rationaleContent}</div>`:''}`;
+      hxItemCounter++;
+    }
+    itemsDiv.appendChild(itemEl);
+  });
+
+  body.innerHTML='';
+  body.appendChild(itemsDiv);
+}
+
+// Keep legacy renderHxOutput for fallback
 function renderHxOutput(data){
   const container=document.getElementById('hx-output');container.innerHTML='';
-  data.sections.forEach((sec,si)=>{
-    const secEl=document.createElement('div');secEl.className='hx-section';
+  hxItemCounter=0;
+  data.sections.forEach(sec=>{
+    const secEl=document.createElement('div');secEl.className='hx-section';secEl.id='hx-sec-'+sec.title.replace(/[^a-zA-Z]/g,'');
     const header=document.createElement('div');header.className='hx-section-header';
     header.innerHTML=`<span class="hx-section-title">${sec.title}</span><span class="hx-section-arrow">&#9662;</span>`;
     header.onclick=()=>secEl.classList.toggle('open');
     const body=document.createElement('div');body.className='hx-section-body';
-    const items=document.createElement('div');items.className='hx-items';
-    const isPearls=sec.title==='Attending Pearls';
-    sec.items.forEach((item,ii)=>{
-      const itemEl=document.createElement('div');itemEl.className='hx-item';
-      const maneuvers=item.maneuvers||[];
-      if(isPearls){
-        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main hx-pearl">${tagManeuvers(escHtml(item.text),maneuvers)}</span></div>`;
-      }else{
-        const uid=`why-${si}-${ii}`;
-        itemEl.innerHTML=`<div class="hx-item-text"><span class="hx-item-main">${item.highYield?'<span class="hx-high-yield">HIGH YIELD</span> ':''}${tagManeuvers(escHtml(item.text),maneuvers)}</span><button class="why-btn" id="btn-${uid}" onclick="toggleWhy('${uid}')">Why ask?</button></div><div class="why-rationale" id="${uid}">${tagManeuvers(escHtml(item.rationale),maneuvers)}</div>`;
-      }
-      items.appendChild(itemEl);
-    });
-    body.appendChild(items);secEl.appendChild(header);secEl.appendChild(body);container.appendChild(secEl);
+    secEl.appendChild(header);secEl.appendChild(body);container.appendChild(secEl);
+    populateSection(sec.title,sec.items,true);
   });
 }
 function toggleWhy(uid){const el=document.getElementById(uid),btn=document.getElementById('btn-'+uid);const open=el.classList.toggle('visible');btn.classList.toggle('open',open);btn.textContent=open?'Hide':'Why ask?';}
