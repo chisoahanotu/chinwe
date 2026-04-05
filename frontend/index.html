@@ -77,7 +77,8 @@
   .test-btn.loading .test-btn-text { display: none; }
   .response-body { font-size: 13.5px; line-height: 1.8; color: var(--text); font-family: var(--sans); }
   .response-body strong { color: var(--accent2); font-weight: 600; }
-  .response-body.two-col .one-liner { margin-bottom: 12px; }
+  .response-body.two-col .one-liner { margin-bottom: 6px; }
+  .response-body.two-col .one-liner:last-of-type { margin-bottom: 16px; }
   .response-body.two-col .section-block { margin-bottom: 10px; }
   .pres-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
   .pres-columns .pres-col { border-left: 1px solid var(--border); padding-left: 16px; }
@@ -1015,12 +1016,22 @@ function fmtPresentation(t){
   for(let i=0;i<fullWidthEnd;i++){
     result+='<div class="one-liner">'+blocks[i].replace(/\n/g,'<br>')+'</div>';
   }
-  // Remaining blocks go in a two-column grid (left fills first, then right)
+  // Remaining blocks: A&P always on right, everything else on left
   const colBlocks=blocks.slice(fullWidthEnd);
   if(colBlocks.length>0){
-    const mid=Math.ceil(colBlocks.length/2);
-    const left=colBlocks.slice(0,mid);
-    const right=colBlocks.slice(mid);
+    const left=[];
+    const right=[];
+    colBlocks.forEach(b=>{
+      const lower=b.toLowerCase();
+      if(lower.includes('assessment')&&lower.includes('plan')||lower.includes('a&p')||lower.includes('a &amp; p')||
+         (right.length>0&&!lower.includes('vital')&&!lower.includes('exam')&&!lower.includes('lab')&&!lower.includes('imaging')&&!lower.includes('data'))){
+        right.push(b);
+      }else if(right.length>0){
+        right.push(b);// once we're in right column, stay there
+      }else{
+        left.push(b);
+      }
+    });
     result+='<div class="pres-columns"><div class="pres-col">';
     left.forEach(b=>{result+='<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>';});
     result+='</div><div class="pres-col">';
