@@ -1510,15 +1510,13 @@ async function runGenerate(){
   const startTime=Date.now();
   bodyEl.innerHTML=`
     <div style="display:flex;flex-direction:column;align-items:center;padding:30px 0;">
-      <div style="font-size:13px;color:var(--muted2);margin-bottom:12px;" id="pres-progress-label">Generating presentation...</div>
+      <div style="font-size:13px;color:var(--muted2);margin-bottom:12px;" id="pres-progress-label">I'm thinking...</div>
       <div style="width:80%;max-width:320px;height:6px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;">
         <div id="pres-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:3px;transition:width 0.3s;"></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="pres-progress-time">0s</div>
     </div>`;
 
   const progressBar=document.getElementById('pres-progress-bar');
-  const progressTime=document.getElementById('pres-progress-time');
   const progressLabel=document.getElementById('pres-progress-label');
   let leftDone=false,rightDone=false;
   const progressInterval=setInterval(()=>{
@@ -1527,9 +1525,8 @@ async function runGenerate(){
     const rightPct=rightDone?50:Math.min(48,elapsed/estTime*50);
     const totalPct=Math.round(leftPct+rightPct);
     progressBar.style.width=totalPct+'%';
-    progressTime.textContent=Math.round(elapsed)+'s';
-    if(leftDone&&!rightDone)progressLabel.textContent='Generating assessment & plan...';
-    else if(!leftDone&&rightDone)progressLabel.textContent='Generating clinical data...';
+    if(leftDone&&!rightDone)progressLabel.textContent='Almost there...';
+    else if(!leftDone&&rightDone)progressLabel.textContent='Almost there...';
     else if(leftDone&&rightDone)progressLabel.textContent='Done!';
   },300);
 
