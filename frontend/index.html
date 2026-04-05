@@ -1027,62 +1027,6 @@ function tagManeuvers(html,maneuvers){
 
 let maneuverCache={};
 
-// Stanford Medicine 25 topic mapping
-const STANFORD_TOPICS=[
-  {topic:'Shoulder Exam',slug:'the25/shoulder',keys:['shoulder','hawkins','neer','empty can','drop arm','speed','yergason','apprehension','sulcus','obrien','cross body','rotator cuff','impingement','supraspinatus']},
-  {topic:'Knee Exam',slug:'the25/knee',keys:['knee','mcmurray','lachman','anterior drawer','posterior drawer','valgus stress','varus stress','pivot shift','acl','mcl','meniscus','patellar','thessaly']},
-  {topic:'Low Back Exam',slug:'the25/low-back',keys:['low back','straight leg raise','slr','lasegue','crossed slr','sacroiliac','faber','patrick','schober']},
-  {topic:'Hip Region',slug:'the25/hip',keys:['hip','trendelenburg','faber','patrick','log roll','thomas test','ober test','piriformis']},
-  {topic:'Ankle and Foot',slug:'the25/ankle-and-foot',keys:['ankle','foot','thompson','anterior drawer ankle','talar tilt','ottawa','squeeze test','achilles']},
-  {topic:'Carpal Tunnel',slug:'the25/carpal-tunnel',keys:['carpal tunnel','phalen','tinel','durkan','flick sign','median nerve']},
-  {topic:'Tarsal Tunnel',slug:'the25/tarsal-tunnel',keys:['tarsal tunnel','tinel ankle','tibial nerve','dorsiflexion eversion']},
-  {topic:'Hand Exam',slug:'the25/hand',keys:['hand','finkelstein','froment','allen test','grip','mallet finger','boutonniere','swan neck','trigger finger','dupuytren']},
-  {topic:'Cerebellar Exam',slug:'the25/cerebellar',keys:['cerebellar','romberg','finger to nose','heel to shin','dysdiadochokinesia','rapid alternating','tandem gait','dysmetria','intention tremor','nystagmus']},
-  {topic:'Deep Tendon Reflexes',slug:'the25/deep-tendon-reflexes',keys:['reflex','deep tendon','dtr','babinski','clonus','hoffman','biceps reflex','patellar reflex','achilles reflex','brachioradialis']},
-  {topic:'Gait Abnormalities',slug:'the25/gait',keys:['gait','trendelenburg gait','steppage','antalgic','ataxic gait','waddling','spastic gait','parkinsonian gait','scissoring']},
-  {topic:'Pulmonary Exam',slug:'the25/pulmonary',keys:['pulmonary','lung','auscultation','percussion','egophony','tactile fremitus','whispered pectoriloquy','bronchophony','crackles','wheezes','rhonchi','diaphragm excursion']},
-  {topic:'Liver Exam',slug:'the25/liver',keys:['liver','hepatomegaly','scratch test','liver span','hepatojugular reflux']},
-  {topic:'Spleen Exam',slug:'the25/spleen',keys:['spleen','splenomegaly','traube','castell','nixon']},
-  {topic:'Thyroid Exam',slug:'the25/thyroid',keys:['thyroid','thyroid nodule','pemberton','thyroid palpation']},
-  {topic:'Lymph Node Exam',slug:'the25/lymph-node',keys:['lymph node','lymphadenopathy','cervical nodes','axillary nodes','inguinal nodes','supraclavicular','virchow']},
-  {topic:'Neck Vein Exam',slug:'the25/neck-veins',keys:['jvp','jugular venous','neck vein','hepatojugular','jvd','venous pressure','kussmaul']},
-  {topic:'Cardiac Second Sounds',slug:'the25/cardiac-second-sounds',keys:['s2','second heart sound','splitting','fixed splitting','paradoxical splitting','wide splitting','a2','p2']},
-  {topic:'Precordial Movements',slug:'the25/precordial-movements',keys:['precordial','pmi','point of maximal impulse','heave','lift','thrill','apical impulse']},
-  {topic:'Aortic Regurgitation',slug:'the25/aortic-regurgitation',keys:['aortic regurgitation','austin flint','duroziez','quincke','corrigan','hill sign','water hammer','de musset']},
-  {topic:'Diastolic Murmurs',slug:'the25/diastolic-murmurs',keys:['diastolic murmur','opening snap','rumble','graham steell','austin flint murmur','mitral stenosis murmur']},
-  {topic:'Ascites and Venous Patterns',slug:'the25/ascites',keys:['ascites','shifting dullness','fluid wave','puddle sign','caput medusae','venous pattern']},
-  {topic:'Fundoscopic Exam',slug:'the25/fundoscopic',keys:['fundoscop','ophthalmoscop','papilledema','retinal','cup to disc','cotton wool','av nicking','optic disc']},
-  {topic:'Pupillary Responses',slug:'the25/pupillary-responses',keys:['pupil','rapd','marcus gunn','swinging flashlight','afferent pupillary','anisocoria','accommodation','light reflex']},
-  {topic:'Tongue Exam',slug:'the25/tongue',keys:['tongue','glossitis','fasciculation tongue','macroglossia','geographic tongue']},
-  {topic:'Breast Exam',slug:'the25/breast',keys:['breast','cbe','clinical breast']},
-  {topic:'Pelvic Exam',slug:'the25/pelvic',keys:['pelvic','speculum','bimanual','cervical motion','chandelier sign']},
-  {topic:'Rectal Exam',slug:'the25/rectal',keys:['rectal','dre','digital rectal','prostate','guaiac','fecal occult']},
-  {topic:'Involuntary Movements and Tremor',slug:'the25/involuntary-movements',keys:['tremor','chorea','athetosis','dystonia','myoclonus','asterixis','tics','fasciculation','essential tremor','resting tremor','intention tremor']},
-  {topic:'Internal Capsule Stroke',slug:'the25/internal-capsule-stroke',keys:['internal capsule','pure motor','lacunar','capsular stroke','hemiparesis']},
-  {topic:'Ankle Brachial Index',slug:'the25/abi',keys:['ankle brachial','abi','peripheral arterial','pad screening']},
-  {topic:'Pulsus Paradoxus',slug:'the25/pulsus-paradoxus',keys:['pulsus paradoxus','tamponade','paradoxical pulse']},
-  {topic:'Newborn Jaundice',slug:'the25/newborn-jaundice',keys:['newborn jaundice','neonatal jaundice','kramer zones','bilirubin zones']},
-  {topic:'Liver Disease Head to Foot',slug:'the25/liver-disease',keys:['liver disease','spider angioma','palmar erythema','terry nails','gynecomastia','jaundice exam']},
-  {topic:'Shoulder Exam',slug:'the25/shoulder',keys:['supraspinatus','infraspinatus','subscapularis']},
-  {topic:'Parkinson\'s Exam',slug:'the25/parkinsons',keys:['parkinson','cogwheel','rigidity','bradykinesia','pill rolling','postural instability','festinating','masked facies']},
-  {topic:'Scleroderma Exam',slug:'the25/scleroderma',keys:['scleroderma','raynaud','sclerodactyly','calcinosis','telangiectasia','crest']},
-];
-
-function matchStanfordTopic(maneuverName){
-  const lower=maneuverName.toLowerCase();
-  let bestMatch=null,bestScore=0;
-  for(const t of STANFORD_TOPICS){
-    let score=0;
-    for(const key of t.keys){
-      if(lower.includes(key)||key.includes(lower)){
-        score+=key.length;
-      }
-    }
-    if(score>bestScore){bestScore=score;bestMatch=t;}
-  }
-  return bestMatch;
-}
-
 async function openManeuver(name){
   const overlay=document.getElementById('maneuver-overlay');
   const title=document.getElementById('maneuver-title');
@@ -1095,21 +1039,19 @@ async function openManeuver(name){
   title.textContent=name;
   overlay.classList.add('visible');
   stanfordSection.style.display='none';
-  pendingManeuverImages=[];
   stanfordImages.innerHTML='';
   stanfordVideo.innerHTML='';
   stanfordLink.innerHTML='';
 
   if(maneuverCache[name]){
     body.innerHTML=maneuverCache[name].claude;
-    if(maneuverCache[name].stanford) renderStanford(maneuverCache[name].stanford);
+    if(maneuverCache[name].curated) renderCurated(maneuverCache[name].curated);
     return;
   }
 
   body.innerHTML='<div class="maneuver-loading"><div class="spinner"></div>Loading guide...</div>';
 
-  // Run Claude + Stanford fetch in parallel
-  const stanfordTopic=matchStanfordTopic(name);
+  // Run Claude guide + curated data fetch in parallel
   const claudePromise=callAPI({max_tokens:1500,messages:[{role:'user',content:`Give a concise, step-by-step guide for performing the "${name}" clinical maneuver/test.
 
 Format:
@@ -1127,15 +1069,8 @@ Keep it concise and practical — written for a medical student about to perform
 
 **Clinical Pearl:** one practical tip (put this last)`}]});
 
-  let stanfordPromise=null;
-  if(stanfordTopic){
-    const stanfordUrl='https://stanfordmedicine25.stanford.edu/'+stanfordTopic.slug+'.html';
-    stanfordPromise=fetch(API_BASE+'/api/stanford-fetch',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({url:stanfordUrl}),
-    }).then(r=>r.json()).catch(()=>null);
-  }
+  const curatedPromise=fetch(API_BASE+'/api/curated-images/'+encodeURIComponent(name.toLowerCase().trim()))
+    .then(r=>r.json()).catch(()=>({curated:false}));
 
   // Render Claude result
   try{
@@ -1143,49 +1078,43 @@ Keep it concise and practical — written for a medical student about to perform
     const raw=data.content?.map(b=>b.text||'').join('')||'';
     const formatted=fmt(raw);
     body.innerHTML=formatted;
-    maneuverCache[name]={claude:formatted,stanford:null};
+    maneuverCache[name]={claude:formatted,curated:null};
   }catch(e){
     body.innerHTML='<span style="color:var(--red);">Error loading: '+e.message+'</span>';
   }
 
-  // Check for curated images, then render Stanford
-  if(stanfordPromise){
-    try{
-      const stanford=await stanfordPromise;
-      if(stanford&&!stanford.error){
-        // Check if admin has uploaded curated images for this maneuver
-        try{
-          const curatedResp=await fetch(API_BASE+'/api/curated-images/'+encodeURIComponent(name.toLowerCase().trim()));
-          const curatedData=await curatedResp.json();
-          if(curatedData.curated&&curatedData.images&&curatedData.images.length>0){
-            stanford._uploadedImages=curatedData.images;
-          }
-        }catch(ce){/* no curated data */}
-
-        maneuverCache[name].stanford=stanford;
-        renderStanford(stanford);
-      }
-    }catch(e){console.error('Stanford fetch failed:',e);}
-  }
+  // Render curated images + video from Supabase
+  try{
+    const curatedData=await curatedPromise;
+    const hasImages=curatedData.curated&&curatedData.images&&curatedData.images.length>0;
+    const hasVideo=curatedData.video_url;
+    if(hasImages||hasVideo){
+      const renderData={_uploadedImages:curatedData.images||[],_videoUrl:curatedData.video_url||''};
+      if(maneuverCache[name]) maneuverCache[name].curated=renderData;
+      renderCurated(renderData);
+    }
+  }catch(e){console.error('Curated fetch failed:',e);}
 }
 
-function renderStanford(data){
+function renderCurated(data){
   const section=document.getElementById('maneuver-stanford');
   const imagesEl=document.getElementById('stanford-images');
   const videoEl=document.getElementById('stanford-video');
   const linkEl=document.getElementById('stanford-link');
 
-  section.style.display='block';
   imagesEl.innerHTML='';
   videoEl.innerHTML='';
   linkEl.innerHTML='';
 
-  // Images — show uploaded curated images, or upload zone if admin
-  const isAdmin=localStorage.getItem('chinwe_admin')==='1';
-  const maneuverName=document.getElementById('maneuver-title').textContent;
+  const hasImages=data._uploadedImages&&data._uploadedImages.length>0;
+  const hasVideo=data._videoUrl;
 
-  if(data._uploadedImages&&data._uploadedImages.length>0){
-    // Show curated uploaded images
+  if(!hasImages&&!hasVideo) return;
+
+  section.style.display='block';
+
+  // Images
+  if(hasImages){
     data._uploadedImages.forEach(img=>{
       const wrap=document.createElement('div');
       wrap.style.cssText='position:relative;display:inline-block;';
@@ -1195,73 +1124,26 @@ function renderStanford(data){
       imgEl.alt=img.caption||'Clinical maneuver';
       imgEl.title=img.caption||'Click to enlarge';
       imgEl.onclick=()=>{const w=window.open('');w.document.write('<img src="'+imgEl.src+'" style="max-width:100%;"/>');};
+      wrap.appendChild(imgEl);
       imagesEl.appendChild(wrap);
-      if(img.caption){
-        const cap=document.createElement('div');
-        cap.style.cssText='font-size:10px;color:var(--muted);text-align:center;max-width:140px;margin-top:2px;';
-        cap.textContent=img.caption;
-        wrap.appendChild(imgEl);wrap.appendChild(cap);
-      }else{wrap.appendChild(imgEl);}
-      // Admin: remove button
-      if(isAdmin){
-        const rm=document.createElement('button');
-        rm.textContent='×';
-        rm.style.cssText='position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
-        rm.onclick=(e)=>{e.stopPropagation();wrap.remove();};
-        wrap.appendChild(rm);
-      }
     });
   }
 
-  if(isAdmin){
-    // Upload zone for admin
-    const uploadZone=document.createElement('div');
-    uploadZone.id='maneuver-upload-zone';
-    uploadZone.style.cssText='border:2px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;margin-top:8px;cursor:pointer;transition:all 0.15s;width:100%;';
-    uploadZone.innerHTML='<div style="font-size:12px;color:var(--muted2);margin-bottom:4px;">📷 Drop images here or click to upload</div><div style="font-size:10px;color:var(--muted);">Images you add here will be shown to all students for this maneuver</div>';
-
-    // Click to upload
-    uploadZone.onclick=()=>{
-      const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;
-      inp.onchange=(e)=>handleManeuverImageUpload(e.target.files);
-      inp.click();
-    };
-
-    // Drag and drop
-    uploadZone.ondragover=(e)=>{e.preventDefault();uploadZone.style.borderColor='var(--teal)';uploadZone.style.background='rgba(0,151,167,0.05)';};
-    uploadZone.ondragleave=()=>{uploadZone.style.borderColor='';uploadZone.style.background='';};
-    uploadZone.ondrop=(e)=>{e.preventDefault();uploadZone.style.borderColor='';uploadZone.style.background='';
-      const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
-      if(files.length>0) handleManeuverImageUpload(files);
-    };
-
-    imagesEl.appendChild(uploadZone);
-
-    // Save button
-    const saveRow=document.createElement('div');
-    saveRow.style.cssText='width:100%;margin-top:8px;display:flex;gap:8px;';
-    saveRow.innerHTML='<button onclick="saveManeuverImages()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">Save images</button><span id="maneuver-save-status" style="font-size:11px;color:var(--muted);align-self:center;"></span>';
-    imagesEl.appendChild(saveRow);
-  }
-
-  // YouTube video
-  if(data.youtubeLinks&&data.youtubeLinks.length>0){
-    let ytUrl=data.youtubeLinks[0];
-    // Convert watch URLs to embed
-    if(ytUrl.includes('watch?v=')){
+  // Video
+  if(hasVideo){
+    let ytUrl=data._videoUrl;
+    if(ytUrl.includes('youtu.be/')){
+      const vid=ytUrl.match(/youtu\.be\/([^?&]+)/);
+      if(vid) ytUrl='https://www.youtube.com/embed/'+vid[1];
+    }else if(ytUrl.includes('watch?v=')){
       const vid=ytUrl.match(/[?&]v=([^&]+)/);
       if(vid) ytUrl='https://www.youtube.com/embed/'+vid[1];
     }
     if(ytUrl.includes('/embed/')){
       videoEl.innerHTML=`<iframe width="100%" height="280" src="${ytUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:8px;border:1px solid var(--border2);"></iframe>`;
     }else{
-      videoEl.innerHTML=`<a href="${ytUrl}" target="_blank" class="stanford-link">▶ Watch video on YouTube</a>`;
+      videoEl.innerHTML=`<a href="${data._videoUrl}" target="_blank" class="stanford-link">▶ Watch video</a>`;
     }
-  }
-
-  // Link to full page
-  if(data.url){
-    linkEl.innerHTML=`<a href="${data.url}" target="_blank" class="stanford-link">📖 Full exam guide on Stanford Medicine 25 →</a>`;
   }
 }
 
@@ -1269,71 +1151,6 @@ function closeManeuver(){
   document.getElementById('maneuver-overlay').classList.remove('visible');
 }
 
-let pendingManeuverImages=[];
-
-function handleManeuverImageUpload(files){
-  Array.from(files).forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=(ev)=>{
-      const b64=ev.target.result.split(',')[1];
-      pendingManeuverImages.push({data:b64,mime:f.type||'image/jpeg',caption:''});
-      // Show preview
-      const imagesEl=document.getElementById('stanford-images');
-      const zone=document.getElementById('maneuver-upload-zone');
-      const wrap=document.createElement('div');
-      wrap.style.cssText='position:relative;display:inline-block;';
-      const img=document.createElement('img');
-      img.className='stanford-img';
-      img.src=ev.target.result;
-      img.alt='Uploaded';
-      img.style.border='2px solid var(--green)';
-      const rm=document.createElement('button');
-      rm.textContent='×';
-      rm.style.cssText='position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
-      const idx=pendingManeuverImages.length-1;
-      rm.onclick=(e)=>{e.stopPropagation();pendingManeuverImages[idx]=null;wrap.remove();};
-      wrap.appendChild(img);wrap.appendChild(rm);
-      if(zone)imagesEl.insertBefore(wrap,zone);
-      else imagesEl.appendChild(wrap);
-    };
-    reader.readAsDataURL(f);
-  });
-}
-
-async function saveManeuverImages(){
-  const maneuver=document.getElementById('maneuver-title').textContent;
-  const images=pendingManeuverImages.filter(Boolean);
-
-  // Also include any existing uploaded images that weren't removed
-  if(maneuverCache[maneuver]?.stanford?._uploadedImages){
-    const existing=maneuverCache[maneuver].stanford._uploadedImages;
-    // Prepend existing that are still in the DOM
-    images.unshift(...existing);
-  }
-
-  if(images.length===0){
-    document.getElementById('maneuver-save-status').textContent='Add at least one image first.';
-    return;
-  }
-
-  const status=document.getElementById('maneuver-save-status');
-  status.textContent='Saving...';
-
-  try{
-    await fetch(API_BASE+'/api/curated-images',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({maneuver,images}),
-    });
-    // Update cache
-    if(maneuverCache[maneuver]&&maneuverCache[maneuver].stanford){
-      maneuverCache[maneuver].stanford._uploadedImages=images;
-    }
-    pendingManeuverImages=[];
-    status.textContent='Saved! Students will see these images.';
-    setTimeout(()=>{status.textContent='';},3000);
-  }catch(e){status.textContent='Error: '+e.message;}
-}
 function copyHx(){const sections=document.querySelectorAll('.hx-section');let text='';sections.forEach(s=>{const title=s.querySelector('.hx-section-title')?.textContent||'';text+=title+'\n';s.querySelectorAll('.hx-item-main').forEach(i=>text+='  - '+i.innerText.replace('HIGH YIELD','[HY]')+'\n');text+='\n';});navigator.clipboard.writeText(text.trim()).then(()=>{const btn=document.getElementById('hx-copy-btn');btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);});}
 
 // Present: Teach
