@@ -691,7 +691,7 @@ function renderAcronymList(){
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="run-btn" id="note-btn" onclick="runNote()" style="margin-top:0;"><div class="spinner"></div><span class="btn-text">Generate Note ↗</span></button>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted2);"><input type="checkbox" id="skip-clarify" style="accent-color:var(--accent);width:14px;height:14px;" /><span>Skip clarify questions (faster)</span></label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted2);"><input type="checkbox" id="use-clarify" style="accent-color:var(--accent);width:14px;height:14px;" /><span>Ask clarify questions first</span></label>
       </div>
       <div class="error-text" id="note-error"></div>
     </div>
@@ -1267,8 +1267,8 @@ async function runNote(){
   document.getElementById('inline-study').classList.remove('visible');document.getElementById('test-btn').classList.remove('visible');document.getElementById('ai-assist-bar').classList.remove('visible');document.getElementById('ai-assist-result').classList.remove('visible');document.getElementById('ai-assist-result').innerHTML='';
   const hpi=document.getElementById('note-hpi').value.trim();if(!hpi){errorEl.textContent='HPI required.';return;}pendingNoteParams={mode:'type'};
   const btn=document.getElementById('note-btn');btn.classList.add('loading');btn.disabled=true;
-  const skipClarify=document.getElementById('skip-clarify')?.checked;
-  if(skipClarify){
+  const useClarify=document.getElementById('use-clarify')?.checked;
+  if(!useClarify){
     await generateNote({});
     btn.classList.remove('loading');btn.disabled=false;
     return;
