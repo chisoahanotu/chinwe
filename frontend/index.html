@@ -932,7 +932,7 @@ function sendToPresent(){
   switchTab('present');
 }
 function clearPresentContext(){document.getElementById('present-context-bar').style.display='none';}
-function sendToNote(){presentSummary=document.getElementById('present-gen-body').innerText||'';const snippet=presentSummary.substring(0,80)+(presentSummary.length>80?'...':'');document.getElementById('note-context-text').textContent=snippet;document.getElementById('note-context-bar').style.display='block';if(presentSummary)document.getElementById('note-hpi').value=presentSummary.substring(0,500);switchTab('note');}
+function sendToNote(){presentSummary=document.getElementById('present-gen-body').dataset?.fullText||document.getElementById('present-gen-body').innerText||'';const snippet=presentSummary.substring(0,80)+(presentSummary.length>80?'...':'');document.getElementById('note-context-text').textContent=snippet;document.getElementById('note-context-bar').style.display='block';if(presentSummary)document.getElementById('note-hpi').value=presentSummary.substring(0,500);switchTab('note');}
 function clearNoteContext(){presentSummary='';document.getElementById('note-context-bar').style.display='none';}
 /* addHxPhotos, removeHxPhoto, renderHxThumbs removed — photos now go through generic photoToText() */
 
@@ -1490,11 +1490,108 @@ async function submitTeachStep(i){
   }catch(e){fb.textContent='Error: '+e.message;fb.classList.add('visible');}
   finally{btn.disabled=false;btn.textContent='Submit ↗';}
 }
-function runGenerate(){
+async function runGenerate(){
   const patient=document.getElementById('present-patient').value.trim();
   if(!patient){document.getElementById('present-gen-error').textContent='No patient data — extract findings or generate a case first.';return;}
   const {label:settingLabel,level,expectation}=getSettingContext();
-  simple(`You are an expert clinical educator coaching a ${level} student. Generate a ${settingLabel} oral presentation. Format expectations: ${expectation} Be specific to this setting — what's appropriate here differs from other settings.`,`Patient data:\n${patient}\n\nGenerate a complete oral presentation formatted for the ${settingLabel} setting.`,'present-gen-body','present-gen-error','present-gen-btn');
+  const btn=document.getElementById('present-gen-btn'),errorEl=document.getElementById('present-gen-error');
+  const bodyEl=document.getElementById('present-gen-body');
+  const section=document.getElementById('present-gen-response');
+
+  btn.classList.add('loading');btn.disabled=true;errorEl.textContent='';
+  section.classList.add('visible');
+  bodyEl.classList.add('two-col');
+
+  const isRounds=settingLabel.toLowerCase().includes('rounds');
+  const sharedContext=`You are an expert clinical educator coaching a ${level} student for a ${settingLabel} presentation.\nPatient data:\n${patient}`;
+
+  // Build the layout shell
+  bodyEl.innerHTML=`
+    <div class="one-liner" id="pres-oneliner"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>
+    ${isRounds?'<div class="one-liner" id="pres-overnight"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>':''}
+    <div class="pres-columns">
+      <div class="pres-col" id="pres-left"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>
+      <div class="pres-col" id="pres-right"><span style="color:var(--muted);font-size:12px;">Loading...</span></div>
+    </div>`;
+
+  const oneLinerEl=document.getElementById('pres-oneliner');
+  const overnightEl=document.getElementById('pres-overnight');
+  const leftEl=document.getElementById('pres-left');
+  const rightEl=document.getElementById('pres-right');
+
+  // Call 1: One-liner + overnight (if rounds) + vitals/exam/labs (left column)
+  const leftPrompt=isRounds
+    ?`${sharedContext}\n\nGenerate ONLY these parts of a morning rounds presentation:\n1. One-liner: brief identifier (age/sex/PMH/reason for admission) — one sentence\n2. Overnight events: what happened overnight, interventions, patient response — keep concise\n3. Vitals trends (compare to prior day if relevant)\n4. Focused exam changes from prior day\n5. New labs, imaging, or data\n\nDo NOT include Assessment & Plan. Format with **bold** headers.`
+    :`${sharedContext}\n\nGenerate ONLY these parts of a ${settingLabel} presentation:\n1. One-liner: brief identifier — one sentence\n2. HPI\n3. Vitals\n4. Physical exam\n5. Labs, imaging, data\n\nDo NOT include Assessment & Plan. Format with **bold** headers.`;
+
+  // Call 2: Assessment & Plan (right column)
+  const rightPrompt=`${sharedContext}\n\nGenerate ONLY the Assessment & Plan section of a ${settingLabel} presentation. Format as problem-based A&P:\n- State overall assessment first\n- Then list each active problem with plan\n- Be specific with medications, doses, monitoring\n- ${isRounds?'Focus on changes from prior plan, new orders, and disposition.':'Be thorough.'}\n\nFormat with **bold** headers. Do NOT include one-liner, HPI, vitals, exam, or labs.`;
+
+  // Fire both simultaneously
+  const leftPromise=fetch(`${API_BASE}/api/chat/stream`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system:`Expert clinical educator for ${level} students.`,messages:[{role:'user',content:leftPrompt}]}),
+  });
+  const rightPromise=fetch(`${API_BASE}/api/chat/stream`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system:`Expert clinical educator for ${level} students.`,messages:[{role:'user',content:rightPrompt}]}),
+  });
+
+  // Stream left side
+  async function streamSide(respPromise,onChunk){
+    const resp=await respPromise;
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error||`Error ${resp.status}`);}
+    const reader=resp.body.getReader();const decoder=new TextDecoder();let buf='',full='',lastRender='';
+    while(true){
+      let done,value;try{const r=await reader.read();done=r.done;value=r.value;}catch(e){break;}if(done)break;
+      buf+=decoder.decode(value,{stream:true});const parts=buf.split('\n\n');buf=parts.pop();
+      for(const part of parts){for(const line of part.split('\n')){const t=line.trim();if(!t.startsWith('data:'))continue;const raw=t.slice(5).trim();if(!raw||raw==='[DONE]')continue;try{const ev=JSON.parse(raw);if(ev&&typeof ev.text==='string')full+=ev.text;}catch(e){}}}
+      const newlines=full.split('\n').length;const lastNewlines=lastRender.split('\n').length;
+      if(newlines>lastNewlines||full.length-lastRender.length>150){lastRender=full;onChunk(full,false);}
+    }
+    onChunk(full,true);
+    return full;
+  }
+
+  let leftText='',rightText='';
+
+  const leftStream=streamSide(leftPromise,(text,final)=>{
+    leftText=text;
+    const fmted=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
+    const blocks=fmted.split(/\n\n+/);
+    // First block = one-liner
+    if(blocks[0])oneLinerEl.innerHTML=blocks[0].replace(/\n/g,'<br>');
+    // For rounds: second block = overnight
+    let dataStart=1;
+    if(isRounds&&blocks.length>1){
+      const lower=blocks[1].toLowerCase();
+      if(lower.includes('overnight')||lower.includes('event')||lower.includes('hospital day')||dataStart===1){
+        if(overnightEl)overnightEl.innerHTML=blocks[1].replace(/\n/g,'<br>');
+        dataStart=2;
+      }
+    }
+    // Rest = left column data
+    const dataBlocks=blocks.slice(dataStart);
+    leftEl.innerHTML=dataBlocks.map(b=>'<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>').join('');
+    if(!final)leftEl.innerHTML+='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
+  });
+
+  const rightStream=streamSide(rightPromise,(text,final)=>{
+    rightText=text;
+    const fmted=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>');
+    rightEl.innerHTML=fmted.replace(/\n\n+/g,'<br><br>').replace(/\n/g,'<br>');
+    if(!final)rightEl.innerHTML+='<span style="display:inline-block;width:2px;height:14px;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s infinite;"></span>';
+  });
+
+  try{
+    await Promise.all([leftStream,rightStream]);
+    // Store combined text for sendToNote and other features
+    const combined=leftText+'\n\n'+rightText;
+    bodyEl.dataset.fullText=combined;
+  }catch(e){
+    errorEl.textContent='Error: '+e.message;
+  }
+  btn.classList.remove('loading');btn.disabled=false;
 }
 
 let recognition=null,isRecording=false;
