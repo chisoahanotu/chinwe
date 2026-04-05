@@ -1586,24 +1586,63 @@ async function runGenerate(){
       dataStart=2;
     }
 
-    // Combine data blocks + A&P blocks, then split across two columns
+    // Combine data blocks + A&P blocks, then split across two columns by character length
     const dataBlocks=leftBlocks.slice(dataStart);
-    const rightBlocks=rightFmt.split(/\n\n+/);
-    const allColBlocks=[...dataBlocks,...rightBlocks];
+    const rightBlocks=rightFmt.split(/\n\n+/).filter(b=>b.trim());
 
-    // Split into left and right columns — break at a subheader boundary near the midpoint
-    const mid=Math.ceil(allColBlocks.length/2);
-    // Find the nearest block at or after mid that starts with a bold header (new problem/section)
-    let splitAt=mid;
-    for(let i=mid;i<allColBlocks.length;i++){
-      if(allColBlocks[i].match(/^<strong>/)||allColBlocks[i].match(/^\*\*/)){splitAt=i;break;}
-    }
-    // If we couldn't find a header after mid, try before mid
-    if(splitAt===mid){
-      for(let i=mid-1;i>0;i--){
-        if(allColBlocks[i].match(/^<strong>/)||allColBlocks[i].match(/^\*\*/)){splitAt=i;break;}
+    // Merge A&P preamble blocks (header + overall assessment) into the first problem block
+    // so they don't get stranded on the left without any problems
+    const mergedRight=[];
+    let preamble='';
+    for(const b of rightBlocks){
+      const isAPHeader=b.toLowerCase().includes('assessment')&&b.toLowerCase().includes('plan')&&b.length<80;
+      const isProblemHeader=b.match(/^<strong>Problem\s/i);
+      if(!isProblemHeader&&mergedRight.length===0){
+        // This is preamble (A&P header or overall assessment) — accumulate
+        preamble+=(preamble?'\n\n':'')+b;
+      }else if(isProblemHeader&&preamble){
+        // Attach preamble to first problem
+        mergedRight.push(preamble+'\n\n'+b);
+        preamble='';
+      }else{
+        mergedRight.push(b);
       }
     }
+    if(preamble)mergedRight.push(preamble);// if no problems found, keep preamble as its own block
+
+    const allColBlocks=[...dataBlocks,...mergedRight];
+
+    // Calculate total character length, then find the split point closest to 50% by length
+    const totalLen=allColBlocks.reduce((s,b)=>s+b.length,0);
+    const targetLen=totalLen/2;
+    let runningLen=0,splitAt=0;
+    for(let i=0;i<allColBlocks.length;i++){
+      runningLen+=allColBlocks[i].length;
+      if(runningLen>=targetLen){
+        // Check: should we split here or one block later?
+        // Only split at a bold header boundary
+        // Search forward from here for next header
+        let foundAfter=-1;
+        for(let j=i;j<allColBlocks.length;j++){
+          if(allColBlocks[j].match(/^<strong>/)){ foundAfter=j; break; }
+        }
+        // Search backward for header
+        let foundBefore=-1;
+        for(let j=i;j>0;j--){
+          if(allColBlocks[j].match(/^<strong>/)){ foundBefore=j; break; }
+        }
+        // Pick whichever header is closer to the midpoint
+        if(foundAfter>=0&&foundBefore>=0){
+          const afterDist=Math.abs(allColBlocks.slice(0,foundAfter).reduce((s,b)=>s+b.length,0)-targetLen);
+          const beforeDist=Math.abs(allColBlocks.slice(0,foundBefore).reduce((s,b)=>s+b.length,0)-targetLen);
+          splitAt=afterDist<beforeDist?foundAfter:foundBefore;
+        }else if(foundAfter>=0){splitAt=foundAfter;}
+        else if(foundBefore>=0){splitAt=foundBefore;}
+        else{splitAt=i;}
+        break;
+      }
+    }
+    if(splitAt<=0)splitAt=Math.ceil(allColBlocks.length/2);
 
     const leftCol=allColBlocks.slice(0,splitAt);
     const rightCol=allColBlocks.slice(splitAt);
