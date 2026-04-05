@@ -1137,7 +1137,14 @@ No markdown, no code fences.`;
           });
           return itemTexts;
         }catch(e){
-          if(attempt>=retries){console.error('Haiku failed after retry:',e);return [];}
+          if(attempt>=retries){
+            console.error('Haiku failed after retry:',e);
+            // Show error in the section so it's visible
+            expectedSections.forEach(secName=>{
+              populateSection(secName,[{text:'Failed to load — try again',highYield:false,maneuvers:[]}],false);
+            });
+            return [];
+          }
         }
       }
       return [];
