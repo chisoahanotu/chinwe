@@ -1586,12 +1586,32 @@ async function runGenerate(){
       dataStart=2;
     }
 
-    // Columns
+    // Combine data blocks + A&P blocks, then split across two columns
     const dataBlocks=leftBlocks.slice(dataStart);
+    const rightBlocks=rightFmt.split(/\n\n+/);
+    const allColBlocks=[...dataBlocks,...rightBlocks];
+
+    // Split into left and right columns — break at a subheader boundary near the midpoint
+    const mid=Math.ceil(allColBlocks.length/2);
+    // Find the nearest block at or after mid that starts with a bold header (new problem/section)
+    let splitAt=mid;
+    for(let i=mid;i<allColBlocks.length;i++){
+      if(allColBlocks[i].match(/^<strong>/)||allColBlocks[i].match(/^\*\*/)){splitAt=i;break;}
+    }
+    // If we couldn't find a header after mid, try before mid
+    if(splitAt===mid){
+      for(let i=mid-1;i>0;i--){
+        if(allColBlocks[i].match(/^<strong>/)||allColBlocks[i].match(/^\*\*/)){splitAt=i;break;}
+      }
+    }
+
+    const leftCol=allColBlocks.slice(0,splitAt);
+    const rightCol=allColBlocks.slice(splitAt);
+
     html+='<div class="pres-columns"><div class="pres-col">';
-    dataBlocks.forEach(b=>{html+='<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>';});
+    leftCol.forEach(b=>{html+='<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>';});
     html+='</div><div class="pres-col">';
-    html+=rightFmt.replace(/\n\n+/g,'<br><br>').replace(/\n/g,'<br>');
+    rightCol.forEach(b=>{html+='<div class="section-block">'+b.replace(/\n/g,'<br>')+'</div>';});
     html+='</div></div>';
 
     bodyEl.innerHTML=html;
