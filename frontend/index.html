@@ -1256,8 +1256,9 @@ function populateSection(title,items,showWhyAsk){
   let secEl=document.getElementById(secId);
   const container=document.getElementById('hx-output');
 
-  // Clear "Generating..." placeholder on first section
-  if(container.querySelector(':scope > span')){container.innerHTML='';}
+  // Clear "Generating..." placeholder on first section (only remove the span, not other sections)
+  const genSpan=container.querySelector(':scope > span');
+  if(genSpan) genSpan.remove();
 
   // Create section if it doesn't exist
   if(!secEl){
