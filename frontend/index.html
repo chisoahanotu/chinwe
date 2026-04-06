@@ -1226,6 +1226,24 @@ Generate rationales for the 3-4 expected items per section. Index sequentially s
     // Sort sections into correct order
     const sectionOrder=['Onset & Character','Associated Symptoms','PMH & Risk Factors','Medications & Social History','Physical Exam','Red Flags','Age-Appropriate Screening','Attending Pearls'];
     const children=Array.from(output.children).filter(c=>c.classList.contains('hx-section'));
+
+    // Debug: check for missing sections
+    const renderedTitles=children.map(c=>c.querySelector('.hx-section-title')?.textContent||'');
+    const expectedTitles=['Onset & Character','Associated Symptoms','PMH & Risk Factors','Medications & Social History','Physical Exam','Red Flags','Attending Pearls'];
+    const missing=expectedTitles.filter(t=>!renderedTitles.some(r=>r===t));
+    if(missing.length>0){
+      console.error('MISSING SECTIONS:',missing);
+      console.error('RENDERED:',renderedTitles);
+      console.error('ALL SECTION IDS:',children.map(c=>c.id));
+      // Force create missing sections with error message
+      missing.forEach(t=>{
+        populateSection(t,[{text:'Section failed to generate — try again',highYield:false,maneuvers:[]}],false);
+      });
+      // Re-collect children after adding missing
+      children.length=0;
+      Array.from(output.children).filter(c=>c.classList.contains('hx-section')).forEach(c=>children.push(c));
+    }
+
     children.sort((a,b)=>{
       const aTitle=a.querySelector('.hx-section-title')?.textContent||'';
       const bTitle=b.querySelector('.hx-section-title')?.textContent||'';
